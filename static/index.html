@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Supplier Intelligence API</title>
+<style>
+  :root {
+    --bg: #0f1115; --panel: #171a21; --line: #262b36; --ink: #e6e9ef;
+    --muted: #98a1b3; --accent: #6ea8fe;
+    --low: #3fb950; --medium: #d29922; --high: #f85149; --critical: #da3633;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.55
+    ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  header { padding: 28px 24px 12px; border-bottom: 1px solid var(--line); }
+  h1 { margin: 0 0 4px; font-size: 20px; letter-spacing: -.01em; }
+  h1 span { color: var(--muted); font-weight: 400; }
+  .sub { color: var(--muted); font-size: 13px; }
+  main { max-width: 1080px; margin: 0 auto; padding: 22px 24px 64px; }
+  form { display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 10px; margin-bottom: 14px; }
+  input, button {
+    font: inherit; padding: 10px 12px; border-radius: 8px;
+    border: 1px solid var(--line); background: var(--panel); color: var(--ink);
+  }
+  button { background: var(--accent); color: #06101f; font-weight: 600; cursor: pointer; border: 0; }
+  button:disabled { opacity: .55; cursor: progress; }
+  .examples { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 22px; }
+  .examples button { background: var(--panel); color: var(--muted); font-weight: 400; font-size: 13px; border: 1px solid var(--line); }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; margin-bottom: 14px; }
+  .card h2 { margin: 0 0 10px; font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+  .row { display: flex; gap: 22px; flex-wrap: wrap; }
+  .score { font-size: 44px; font-weight: 700; line-height: 1; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+  .low { background: rgba(63,185,80,.15); color: var(--low); }
+  .medium { background: rgba(210,153,34,.15); color: var(--medium); }
+  .high { background: rgba(248,81,73,.15); color: var(--high); }
+  .critical { background: rgba(218,54,51,.2); color: var(--critical); }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 500; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .bar { height: 6px; background: #21262d; border-radius: 4px; overflow: hidden; min-width: 90px; }
+  .bar i { display: block; height: 100%; background: var(--accent); }
+  .muted { color: var(--muted); }
+  pre { background: #0b0d11; border: 1px solid var(--line); border-radius: 8px; padding: 12px; overflow: auto; max-height: 420px; font-size: 12px; }
+  details summary { cursor: pointer; color: var(--muted); font-size: 13px; }
+  .kv { display: grid; grid-template-columns: 150px 1fr; gap: 4px 14px; font-size: 13.5px; }
+  .kv div:nth-child(odd) { color: var(--muted); }
+  .status { color: var(--muted); font-size: 13px; margin-bottom: 14px; }
+  @media (max-width: 720px) { form { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Supplier Intelligence API <span>/ third party risk investigation layer</span></h1>
+  <div class="sub">OFAC &middot; SEC EDGAR &middot; GLEIF &middot; GDELT &middot; CourtListener &rarr; entity resolution &rarr; evidence &rarr; risk &rarr; Claude</div>
+</header>
+
+<main>
+  <form id="f">
+    <input id="name" placeholder="Company name" required />
+    <input id="country" placeholder="Country (optional)" />
+    <input id="website" placeholder="Website (optional)" />
+    <button id="go" type="submit">Investigate</button>
+  </form>
+
+  <div class="examples">
+    <button data-n="Kesko Oyj" data-c="Finland" data-w="https://www.kesko.fi">Demo 1 &middot; clean</button>
+    <button data-n="Wells Fargo &amp; Company" data-c="United States">Demo 2 &middot; risk positive</button>
+    <button data-n="ABC Manufacturing" data-c="United States">Demo 3 &middot; entity resolution</button>
+  </div>
+
+  <div class="status" id="status"></div>
+  <div id="out"></div>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+document.querySelectorAll(".examples button").forEach(b => {
+  b.onclick = () => {
+    $("name").value = b.dataset.n;
+    $("country").value = b.dataset.c || "";
+    $("website").value = b.dataset.w || "";
+    $("f").requestSubmit();
+  };
+});
+
+$("f").onsubmit = async (e) => {
+  e.preventDefault();
+  $("go").disabled = true;
+  $("out").innerHTML = "";
+  $("status").textContent = "Investigating - querying live sources...";
+  const t0 = performance.now();
+  try {
+    const res = await fetch("/api/v1/supplier/investigate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: $("name").value,
+        country: $("country").value || null,
+        website: $("website").value || null,
+      }),
+    });
+    if (!res.ok) throw new Error((await res.json()).detail || res.statusText);
+    const data = await res.json();
+    $("status").textContent =
+      `Completed in ${data.duration_seconds}s (round trip ${((performance.now()-t0)/1000).toFixed(1)}s)`;
+    render(data);
+  } catch (err) {
+    $("status").textContent = "Failed: " + err.message;
+  } finally {
+    $("go").disabled = false;
+  }
+};
+
+function render(d) {
+  const s = d.supplier, r = d.risk, er = d.entity_resolution, a = d.agent_summary;
+  const pct = (v) => `<div class="bar"><i style="width:${Math.round(v*100)}%"></i></div>`;
+
+  const breakdown = er.selected
+    ? Object.entries(er.selected.confidence_breakdown).map(([k, v]) =>
+        `<tr><td>${esc(k)}</td><td>${v.toFixed(2)}</td><td>${pct(v)}</td>
+         <td class="muted">weight ${er.selected.weights_used[k] ?? "-"}</td></tr>`).join("")
+    : `<tr><td colspan="4" class="muted">No candidate records matched.</td></tr>`;
+
+  const alts = er.alternatives.map(x =>
+    `<tr><td>${esc(x.name)}</td><td class="muted">${esc(x.source)}</td>
+     <td>${x.confidence.toFixed(2)}</td><td>${pct(x.confidence)}</td></tr>`).join("")
+    || `<tr><td colspan="4" class="muted">None</td></tr>`;
+
+  const own = d.ownership.map(o =>
+    `<tr><td>${esc(o.name)}</td><td>${esc(o.role)}</td><td class="muted">${esc(o.source)}</td>
+     <td>${(o.confidence ?? 0).toFixed(2)}</td></tr>`).join("")
+    || `<tr><td colspan="4" class="muted">No ownership or officer records found.</td></tr>`;
+
+  const media = d.adverse_media.map(m =>
+    `<tr><td>${m.url ? `<a href="${esc(m.url)}" target="_blank" rel="noopener">${esc(m.title)}</a>` : esc(m.title)}</td>
+     <td class="muted">${esc(m.source)}</td><td class="muted">${esc(m.date)}</td>
+     <td><span class="badge high">${esc(m.sentiment)}</span></td><td>${m.severity}</td></tr>`).join("")
+    || `<tr><td colspan="5" class="muted">No negative coverage matched.</td></tr>`;
+
+  const cases = (d.litigation.cases || []).map(c =>
+    `<tr><td>${c.url ? `<a href="${esc(c.url)}" target="_blank" rel="noopener">${esc(c.case)}</a>` : esc(c.case)}</td>
+     <td class="muted">${esc(c.court)}</td><td class="muted">${esc(c.date)}</td></tr>`).join("")
+    || `<tr><td colspan="3" class="muted">${esc(d.litigation.note || "No matching dockets.")}</td></tr>`;
+
+  const contrib = r.contributions.map(c =>
+    `<tr><td>${esc(c.category)}</td><td>+${c.points}</td><td class="muted">${esc(c.source)}</td></tr>`).join("")
+    || `<tr><td colspan="3" class="muted">No risk signals fired.</td></tr>`;
+
+  const ev = d.evidence.map(e =>
+    `<tr><td class="muted">${esc(e.id)}</td><td class="muted">${esc(e.source)}</td>
+     <td>${e.url ? `<a href="${esc(e.url)}" target="_blank" rel="noopener">${esc(e.description)}</a>` : esc(e.description)}</td></tr>`).join("");
+
+  $("out").innerHTML = `
+    <div class="card">
+      <h2>Risk</h2>
+      <div class="row" style="align-items:center">
+        <div><div class="score">${r.score}</div><div class="muted">of 100</div></div>
+        <div>
+          <span class="badge ${r.level}">${r.level.toUpperCase()}</span>
+          <div style="margin-top:8px;max-width:620px">${esc(a.recommendation)}</div>
+        </div>
+      </div>
+      <table style="margin-top:14px"><tr><th>Signal</th><th>Points</th><th>Source</th></tr>${contrib}</table>
+    </div>
+
+    <div class="card">
+      <h2>Supplier identity</h2>
+      <div class="kv">
+        <div>Resolved name</div><div>${esc(s.name)}</div>
+        <div>Status</div><div><span class="badge ${s.verified ? "low" : "medium"}">${esc(s.status)}</span>
+          &nbsp;confidence ${s.identity_confidence.toFixed(2)}</div>
+        <div>Country</div><div>${esc(s.country || "-")}</div>
+        <div>LEI</div><div>${esc(s.lei || "-")}</div>
+        <div>SEC CIK</div><div>${esc(s.cik || "-")}</div>
+        <div>Aliases</div><div>${s.aliases.length ? esc(s.aliases.join(", ")) : "-"}</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Entity resolution &middot; ${esc(er.embedding_backend)} embeddings &middot; ${er.candidates_considered} candidates</h2>
+      <table><tr><th>Feature</th><th>Score</th><th></th><th></th></tr>${breakdown}</table>
+      <details style="margin-top:12px"><summary>Rejected alternatives</summary>
+        <table style="margin-top:8px"><tr><th>Name</th><th>Source</th><th>Conf.</th><th></th></tr>${alts}</table>
+      </details>
+    </div>
+
+    <div class="card">
+      <h2>Sanctions &middot; OFAC</h2>
+      <div>${d.sanctions.match
+        ? `<span class="badge critical">MATCH</span> ${esc(d.sanctions.matched_entity?.name)}
+           <span class="muted">(program ${esc(d.sanctions.matched_entity?.program)}, similarity ${d.sanctions.confidence})</span>`
+        : `<span class="badge low">NO MATCH</span> <span class="muted">screened against ${d.sanctions.list_size} SDN names</span>`}
+      </div>
+    </div>
+
+    <div class="card"><h2>Ownership &amp; officers</h2>
+      <table><tr><th>Name</th><th>Role</th><th>Source</th><th>Conf.</th></tr>${own}</table></div>
+
+    <div class="card"><h2>Litigation</h2>
+      <table><tr><th>Case</th><th>Court</th><th>Filed</th></tr>${cases}</table></div>
+
+    <div class="card"><h2>Adverse media</h2>
+      <table><tr><th>Headline</th><th>Source</th><th>Date</th><th>Sentiment</th><th>Sev.</th></tr>${media}</table></div>
+
+    <div class="card">
+      <h2>Agent report &middot; ${esc(a.generated_by || "")}</h2>
+      <p>${esc(a.summary)}</p>
+      <div class="kv" style="margin-top:10px">
+        <div>Identity</div><div>${esc(a.identity_assessment)}</div>
+        <div>Ownership</div><div>${esc(a.ownership_assessment)}</div>
+        <div>Sanctions</div><div>${esc(a.sanctions_assessment)}</div>
+        <div>Litigation</div><div>${esc(a.litigation_assessment)}</div>
+        <div>Adverse media</div><div>${esc(a.adverse_media_assessment)}</div>
+      </div>
+      ${a.evidence_gaps?.length ? `<p class="muted" style="margin-top:10px">Gaps: ${esc(a.evidence_gaps.join("; "))}</p>` : ""}
+    </div>
+
+    <div class="card"><h2>Evidence</h2>
+      <table><tr><th>ID</th><th>Source</th><th>Description</th></tr>${ev}</table></div>
+
+    <details class="card"><summary>Raw intelligence object (JSON)</summary>
+      <pre>${esc(JSON.stringify(d, null, 2))}</pre></details>
+  `;
+}
+</script>
+</body>
+</html>

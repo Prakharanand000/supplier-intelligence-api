@@ -1,0 +1,38 @@
+# Render blueprint. In the Render dashboard: New -> Blueprint -> pick this repo.
+# Everything provisions except ANTHROPIC_API_KEY, which is prompted for at
+# deploy time (sync: false) so the key never lives in the repository.
+services:
+  - type: web
+    name: supplier-intelligence-api
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.13.4"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: supplier-intel-db
+          property: connectionString
+      # Fail loudly in a hosted environment rather than silently falling back
+      # to an ephemeral SQLite file on a container that will be recycled.
+      - key: ALLOW_SQLITE_FALLBACK
+        value: "false"
+      # SEC EDGAR rejects requests without a real contact address - change this
+      # to your own before deploying.
+      - key: USER_AGENT
+        value: "SupplierIntelligenceAPI/0.1 (contact@example.com)"
+      - key: CLAUDE_MODEL
+        value: "claude-opus-4-8"
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: COURTLISTENER_API_TOKEN
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+
+databases:
+  - name: supplier-intel-db
+    plan: free

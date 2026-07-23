@@ -71,27 +71,37 @@ def _cache_key(method: str, url: str, params: dict | None) -> str:
 
 
 async def _cache_get(key: str, ttl_hours: int) -> str | None:
-    async with session_factory()() as db:
-        row = (
-            await db.execute(select(HttpCache).where(HttpCache.cache_key == key))
-        ).scalar_one_or_none()
-        if row is None:
-            return None
-        fetched = row.fetched_at
-        if fetched.tzinfo is None:  # SQLite returns naive datetimes
-            fetched = fetched.replace(tzinfo=timezone.utc)
-        if datetime.now(timezone.utc) - fetched > timedelta(hours=ttl_hours):
-            return None
-        return row.body
+    # The cache is an optimization, never the data path. A storage failure
+    # (lock contention, disk full, dead connection) must degrade to a live
+    # fetch rather than take the source down with it.
+    try:
+        async with session_factory()() as db:
+            row = (
+                await db.execute(select(HttpCache).where(HttpCache.cache_key == key))
+            ).scalar_one_or_none()
+            if row is None:
+                return None
+            fetched = row.fetched_at
+            if fetched.tzinfo is None:  # SQLite returns naive datetimes
+                fetched = fetched.replace(tzinfo=timezone.utc)
+            if datetime.now(timezone.utc) - fetched > timedelta(hours=ttl_hours):
+                return None
+            return row.body
+    except Exception as exc:  # noqa: BLE001
+        log.debug("cache read skipped for %s: %s", key[:12], exc)
+        return None
 
 
 async def _cache_put(key: str, url: str, status: int, body: str) -> None:
-    async with session_factory()() as db:
-        await db.execute(delete(HttpCache).where(HttpCache.cache_key == key))
-        db.add(
-            HttpCache(cache_key=key, url=url, status_code=status, body=body)
-        )
-        await db.commit()
+    try:
+        async with session_factory()() as db:
+            await db.execute(delete(HttpCache).where(HttpCache.cache_key == key))
+            db.add(
+                HttpCache(cache_key=key, url=url, status_code=status, body=body)
+            )
+            await db.commit()
+    except Exception as exc:  # noqa: BLE001
+        log.debug("cache write skipped for %s: %s", url, exc)
 
 
 async def fetch(

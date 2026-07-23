@@ -10,6 +10,7 @@ Screening never calls out to the network.
 
 from __future__ import annotations
 
+import asyncio
 import csv
 import io
 import logging
@@ -42,6 +43,9 @@ WEAK_MATCH = 0.80
 _index: dict[str, list[int]] = {}
 _entries: list[dict] = []
 _loaded = False
+# Serializes ingestion: the startup warm-up and a screening-time self-heal can
+# otherwise both download and bulk-write the list at the same time.
+_ingest_lock = asyncio.Lock()
 
 
 def _clean(value: str | None) -> str | None:
@@ -119,6 +123,11 @@ async def _needs_refresh() -> bool:
 
 async def ingest(force: bool = False) -> int:
     """Download and store the SDN list. Returns the number of names indexed."""
+    async with _ingest_lock:
+        return await _ingest_locked(force)
+
+
+async def _ingest_locked(force: bool) -> int:
     global _loaded
 
     if not force and not await _needs_refresh():

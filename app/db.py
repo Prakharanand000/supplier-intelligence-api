@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import logging
 
-from sqlalchemy import text
+from sqlalchemy import event, text
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -27,8 +27,28 @@ _sessionmaker: async_sessionmaker[AsyncSession] | None = None
 ACTIVE_BACKEND = "uninitialized"
 
 
+def _backend_label(url: str) -> str:
+    """Report the driver actually in use, not the one we hoped for."""
+    scheme = url.split(":", 1)[0].split("+", 1)[0]
+    return {"postgresql": "postgresql", "sqlite": "sqlite"}.get(scheme, scheme)
+
+
 async def _try_engine(url: str) -> AsyncEngine | None:
     engine = create_async_engine(url, pool_pre_ping=True, future=True)
+
+    if url.startswith("sqlite"):
+        # SQLite locks the whole file on write. The OFAC bulk load and the
+        # concurrent HTTP-cache writes collide without these: WAL lets readers
+        # run during a write, and busy_timeout makes writers queue instead of
+        # failing instantly with "database is locked".
+        @event.listens_for(engine.sync_engine, "connect")
+        def _sqlite_pragmas(dbapi_connection, _record):  # noqa: ANN001
+            cursor = dbapi_connection.cursor()
+            cursor.execute("PRAGMA journal_mode=WAL")
+            cursor.execute("PRAGMA busy_timeout=15000")
+            cursor.execute("PRAGMA synchronous=NORMAL")
+            cursor.close()
+
     try:
         async with engine.connect() as conn:
             await conn.execute(text("SELECT 1"))
@@ -45,7 +65,7 @@ async def init_db() -> None:
 
     engine = await _try_engine(settings.database_url)
     if engine is not None:
-        ACTIVE_BACKEND = "postgresql"
+        ACTIVE_BACKEND = _backend_label(settings.database_url)
     elif settings.allow_sqlite_fallback:
         log.warning(
             "PostgreSQL unavailable - falling back to SQLite at %s. "
@@ -53,7 +73,7 @@ async def init_db() -> None:
             settings.sqlite_url,
         )
         engine = await _try_engine(settings.sqlite_url)
-        ACTIVE_BACKEND = "sqlite"
+        ACTIVE_BACKEND = _backend_label(settings.sqlite_url) + " (fallback)"
 
     if engine is None:
         raise RuntimeError(

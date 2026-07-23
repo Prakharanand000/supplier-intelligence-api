@@ -4,6 +4,9 @@ An AI-native third party risk investigation layer. It turns fragmented public
 information into an evidence-backed intelligence object that an enterprise AI
 agent can consume before onboarding, procurement, or investment decisions.
 
+**Live demo:** <https://supplier-intelligence-api-1062146216736.us-central1.run.app>
+(interactive UI, or `POST /api/v1/supplier/investigate`)
+
 ```
 investigate_supplier("ABC Manufacturing Ltd")
 
@@ -239,6 +242,50 @@ static/index.html    demo UI
 scripts/demo.py      end-to-end demo runner
 tests/               offline tests for resolution and risk
 ```
+
+---
+
+## Deployment
+
+### Google Cloud Run (what the live demo runs on)
+
+```bash
+gcloud run deploy supplier-intelligence-api \
+  --source . --region us-central1 --allow-unauthenticated \
+  --memory 1Gi --timeout 300 \
+  --set-env-vars "DATABASE_URL=sqlite+aiosqlite:////tmp/supplier_intel.db,USER_AGENT=YourApp/0.1 (you@example.com)"
+```
+
+**Expect ~40s per request on this setup, against ~1-6s locally.** Cloud Run's
+`/tmp` is per-instance and in-memory, so an instance that has just started has
+an empty database and re-downloads the 5.6 MB SDN list before it can screen.
+The architecture assumes a shared PostgreSQL instance; without one, the OFAC
+cache cannot outlive a container. Two ways to fix it:
+
+- Point `DATABASE_URL` at any managed PostgreSQL (Neon, Supabase and Render all
+  have free tiers). The OFAC list and the HTTP cache then persist across
+  instances and requests drop back to a few seconds.
+- Or `--min-instances 1` to keep one warm instance, which trades a small
+  ongoing cost for latency.
+
+### Render (provisions PostgreSQL for you)
+
+`render.yaml` is a complete blueprint. In the Render dashboard: **New ->
+Blueprint -> select this repo**. It creates the web service and a free
+PostgreSQL instance and wires `DATABASE_URL` automatically; you supply
+`ANTHROPIC_API_KEY` at deploy time so it never enters the repository.
+
+### Docker
+
+```bash
+docker build -t supplier-intel .
+docker run -p 8000:8000 --env-file .env supplier-intel
+```
+
+> The live demo has no `ANTHROPIC_API_KEY` set, so it serves the deterministic
+> report. Add one with
+> `gcloud run services update supplier-intelligence-api --update-env-vars ANTHROPIC_API_KEY=sk-ant-...`
+> and Claude takes over with no other change.
 
 ---
 

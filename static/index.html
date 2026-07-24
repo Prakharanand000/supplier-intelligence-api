@@ -3,194 +3,226 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Supplier Intelligence API</title>
+<title>Supplier Intelligence &middot; Risk Investigation</title>
 <style>
-  :root {
-    --bg:#0d1017; --panel:#151922; --panel2:#1b202b; --line:#252b38;
-    --ink:#e8ebf2; --muted:#8f9bb3; --dim:#6b7689;
-    --accent:#5b9dff; --accent2:#8b6cff;
-    --low:#3fb950; --medium:#d29922; --high:#f0883e; --critical:#f85149;
+  :root{
+    --bg:#ffffff; --soft:#f5f7fa; --panel:#ffffff; --line:#e6e9ee;
+    --ink:#141a24; --muted:#5c6675; --dim:#8b94a3; --accent:#2563eb;
+    --accent-soft:#eaf1ff;
+    --low:#059669; --medium:#d97706; --high:#ea580c; --critical:#dc2626;
+    --factual:#059669; --mixed:#d97706; --polarized:#dc2626;
+    --shadow:0 1px 2px rgba(16,24,40,.04),0 1px 3px rgba(16,24,40,.06);
+    --shadow-lg:0 4px 12px rgba(16,24,40,.08);
   }
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--ink);
-       font:14.5px/1.55 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+  html,body{background:var(--bg)}
+  body{margin:0;color:var(--ink);
+    font:14.5px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,ui-sans-serif,sans-serif;
+    -webkit-font-smoothing:antialiased}
   a{color:var(--accent);text-decoration:none} a:hover{text-decoration:underline}
+  h2{font-size:11.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--dim);
+     margin:0 0 12px;font-weight:600}
 
-  /* ---------- chrome ---------- */
-  header{display:flex;align-items:center;gap:18px;padding:14px 22px;
-         border-bottom:1px solid var(--line);background:var(--panel);
-         position:sticky;top:0;z-index:40}
-  .brand{font-weight:700;letter-spacing:-.01em;font-size:15px;white-space:nowrap}
-  .brand span{color:var(--muted);font-weight:400}
-  .steps{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap}
-  .step{padding:6px 13px;border-radius:7px;font-size:12.5px;color:var(--dim);
-        border:1px solid transparent;cursor:pointer;white-space:nowrap}
-  .step.done{color:var(--muted)}
-  .step.active{background:var(--panel2);border-color:var(--line);color:var(--ink)}
-  .step[disabled]{opacity:.4;cursor:not-allowed}
+  /* header + stepper */
+  header{display:flex;align-items:center;gap:16px;padding:0 24px;height:60px;
+    border-bottom:1px solid var(--line);background:#fff;position:sticky;top:0;z-index:50}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:15px;letter-spacing:-.01em}
+  .logo{width:26px;height:26px;border-radius:7px;background:linear-gradient(135deg,#2563eb,#7c3aed);
+    display:grid;place-items:center;color:#fff;font-size:14px;font-weight:800}
+  .brand small{color:var(--dim);font-weight:400;font-size:12.5px}
+  .steps{display:flex;gap:4px;margin-left:auto}
+  .step{display:flex;align-items:center;gap:8px;padding:7px 14px;border-radius:8px;
+    font-size:13px;color:var(--dim);cursor:pointer;border:1px solid transparent;background:none}
+  .step .dot{width:20px;height:20px;border-radius:50%;background:var(--soft);color:var(--muted);
+    display:grid;place-items:center;font-size:11px;font-weight:700;border:1px solid var(--line)}
+  .step.active{background:var(--accent-soft);color:var(--accent);border-color:#d3e2ff}
+  .step.active .dot{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .step.done{color:var(--muted)} .step.done .dot{background:var(--low);color:#fff;border-color:var(--low)}
+  .step[disabled]{opacity:.45;cursor:not-allowed}
 
-  main{max-width:1240px;margin:0 auto;padding:22px}
-  .view{display:none} .view.on{display:block}
-  h2{font-size:12px;text-transform:uppercase;letter-spacing:.09em;
-     color:var(--muted);margin:0 0 12px;font-weight:600}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:11px;
-        padding:16px 18px;margin-bottom:14px}
+  main{max-width:1280px;margin:0 auto;padding:26px 24px 80px}
+  .view{display:none} .view.on{display:block;animation:fade .25s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:18px 20px;margin-bottom:16px;box-shadow:var(--shadow)}
 
-  /* ---------- intake ---------- */
-  .intake{max-width:860px;margin:0 auto}
+  /* intake */
+  .intake{max-width:900px;margin:0 auto}
   .lede{color:var(--muted);font-size:13.5px;margin:0 0 20px}
-  .seg{display:inline-flex;background:var(--panel2);border:1px solid var(--line);
-       border-radius:8px;padding:3px;margin-bottom:16px}
-  .seg button{background:none;border:0;color:var(--muted);padding:7px 16px;
-              border-radius:6px;cursor:pointer;font:inherit;font-size:13px}
-  .seg button.on{background:var(--accent);color:#06101f;font-weight:600}
-  .grid{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+  .seg{display:inline-flex;background:var(--soft);border:1px solid var(--line);
+    border-radius:9px;padding:3px;margin-bottom:18px}
+  .seg button{background:none;border:0;color:var(--muted);padding:8px 18px;border-radius:6px;
+    cursor:pointer;font:inherit;font-size:13px;font-weight:500}
+  .seg button.on{background:#fff;color:var(--ink);font-weight:600;box-shadow:var(--shadow)}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
   .grid .full{grid-column:1/-1}
-  label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px}
-  input{width:100%;font:inherit;padding:9px 11px;border-radius:7px;
-        border:1px solid var(--line);background:var(--panel2);color:var(--ink)}
-  input:focus{outline:none;border-color:var(--accent)}
-  .hint{font-size:11.5px;color:var(--dim);margin-top:4px}
-  .actions{display:flex;gap:10px;align-items:center;margin-top:20px;flex-wrap:wrap}
-  button.primary{background:var(--accent);color:#06101f;border:0;font-weight:600;
-                 padding:11px 22px;border-radius:8px;cursor:pointer;font:inherit;font-weight:600}
-  button.primary:disabled{opacity:.5;cursor:progress}
-  button.ghost{background:var(--panel2);border:1px solid var(--line);color:var(--muted);
-               padding:8px 13px;border-radius:7px;cursor:pointer;font:inherit;font-size:12.5px}
-  button.ghost:hover{color:var(--ink)}
+  label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:500}
+  input{width:100%;font:inherit;padding:10px 12px;border-radius:9px;border:1px solid var(--line);
+    background:#fff;color:var(--ink)}
+  input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+  .hint{font-size:11.5px;color:var(--dim);margin-top:5px}
+  .actions{display:flex;gap:12px;align-items:center;margin-top:22px;flex-wrap:wrap}
+  button.primary{background:var(--accent);color:#fff;border:0;font-weight:600;padding:11px 22px;
+    border-radius:9px;cursor:pointer;font:inherit;box-shadow:var(--shadow)}
+  button.primary:hover{background:#1d4ed8} button.primary:disabled{opacity:.55;cursor:progress}
+  button.ghost{background:#fff;border:1px solid var(--line);color:var(--muted);padding:9px 15px;
+    border-radius:9px;cursor:pointer;font:inherit;font-size:13px;font-weight:500}
+  button.ghost:hover{border-color:var(--accent);color:var(--accent)}
   .status{color:var(--muted);font-size:13px;min-height:20px}
   .status.err{color:var(--critical)}
+  .samples{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
+  .sample{text-align:left;background:#fff;border:1px solid var(--line);border-radius:11px;
+    padding:14px 16px;cursor:pointer;transition:.15s}
+  .sample:hover{border-color:var(--accent);box-shadow:var(--shadow-lg);transform:translateY(-1px)}
+  .sample b{display:block;font-size:14px;margin-bottom:3px}
+  .sample span{font-size:12px;color:var(--muted)}
+  .sample .cnt{display:inline-block;margin-top:8px;font-size:11px;color:var(--accent);
+    background:var(--accent-soft);padding:2px 8px;border-radius:6px;font-weight:600}
 
-  /* ---------- dashboard ---------- */
-  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(178px,1fr));gap:12px;margin-bottom:14px}
-  .tile{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:14px 16px}
-  .tile .k{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
-  .tile .v{font-size:27px;font-weight:700;margin-top:5px;line-height:1.1}
+  /* dashboard layout */
+  .dash{display:grid;grid-template-columns:250px 1fr;gap:20px;align-items:start}
+  .sidebar{position:sticky;top:80px}
+  .filter-group{margin-bottom:20px}
+  .filter-group h2{margin-bottom:10px}
+  .fitem{display:flex;align-items:center;gap:9px;padding:7px 8px;border-radius:8px;cursor:pointer;
+    font-size:13px;user-select:none}
+  .fitem:hover{background:var(--soft)}
+  .fitem.on{background:var(--accent-soft)}
+  .fitem input{width:auto;margin:0}
+  .fitem .swatch{width:9px;height:9px;border-radius:3px;flex:none}
+  .fitem .lab{flex:1}
+  .fitem .cnt{font-size:11px;color:var(--dim);font-weight:600;background:var(--soft);
+    padding:1px 7px;border-radius:10px}
+  .fitem.on .cnt{background:#fff}
+  .clearf{font-size:12px;color:var(--accent);cursor:pointer;background:none;border:0;padding:4px 0}
+
+  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px}
+  .tile{background:#fff;border:1px solid var(--line);border-radius:11px;padding:14px 16px;box-shadow:var(--shadow)}
+  .tile .k{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:600}
+  .tile .v{font-size:26px;font-weight:700;margin-top:6px;line-height:1.1}
   .tile .s{font-size:12px;color:var(--dim);margin-top:3px}
   .badge{display:inline-block;padding:3px 10px;border-radius:999px;font-size:11.5px;font-weight:600}
-  .low{background:rgba(63,185,80,.15);color:var(--low)}
-  .medium{background:rgba(210,153,34,.15);color:var(--medium)}
-  .high{background:rgba(240,136,62,.15);color:var(--high)}
-  .critical{background:rgba(248,81,73,.18);color:var(--critical)}
-  .neutral{background:var(--panel2);color:var(--muted)}
+  .b-low,.b-factual{background:#e7f6ef;color:var(--low)}
+  .b-medium,.b-mixed{background:#fdf1e1;color:var(--medium)}
+  .b-high{background:#fdeede;color:var(--high)}
+  .b-critical,.b-polarized{background:#fdeaea;color:var(--critical)}
+  .b-neutral{background:var(--soft);color:var(--muted)}
 
-  .chips{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:6px}
-  .chip{border:1px solid var(--line);background:var(--panel2);color:var(--muted);
-        padding:5px 11px;border-radius:999px;font-size:12px;cursor:pointer;
-        display:inline-flex;align-items:center;gap:7px;font-family:inherit}
-  .chip:hover{color:var(--ink)}
-  .chip.on{background:var(--accent);border-color:var(--accent);color:#06101f;font-weight:600}
-  .chip .n{opacity:.75;font-size:11px}
+  /* category distribution */
+  .catbars{display:flex;flex-direction:column;gap:9px}
+  .catbar{display:grid;grid-template-columns:170px 1fr 34px;align-items:center;gap:12px;font-size:13px}
+  .catbar .track{height:9px;background:var(--soft);border-radius:5px;overflow:hidden}
+  .catbar .track i{display:block;height:100%;border-radius:5px}
+  .catbar .num{text-align:right;font-weight:600;font-variant-numeric:tabular-nums}
+  .catname{display:flex;align-items:center;gap:8px}
+  .catname .swatch{width:9px;height:9px;border-radius:3px}
 
   table{width:100%;border-collapse:collapse;font-size:13.5px}
-  th,td{text-align:left;padding:8px;border-bottom:1px solid var(--line);vertical-align:top}
-  th{color:var(--muted);font-weight:500;font-size:12px}
-  tr.clickable{cursor:pointer} tr.clickable:hover td{background:var(--panel2)}
-  .sev{display:inline-block;width:34px;height:5px;border-radius:3px;background:#222836}
-  .sev i{display:block;height:100%;border-radius:3px;background:var(--high)}
+  th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--muted);font-weight:600;font-size:11.5px;text-transform:uppercase;letter-spacing:.04em}
+  tbody tr:hover td{background:var(--soft)}
   .tags{display:flex;gap:4px;flex-wrap:wrap}
-  .tag{font-size:10.5px;padding:2px 7px;border-radius:4px;background:var(--panel2);
-       color:var(--muted);border:1px solid var(--line)}
-  .spark{display:flex;align-items:flex-end;gap:3px;height:44px;margin-top:8px}
-  .spark div{flex:1;background:var(--accent);opacity:.65;border-radius:2px 2px 0 0;min-height:2px}
-  .spark div:hover{opacity:1}
-  .two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .tag{font-size:10.5px;padding:2px 8px;border-radius:5px;font-weight:600;color:#fff}
+  .sevbar{display:inline-block;width:40px;height:6px;border-radius:3px;background:var(--soft);overflow:hidden}
+  .sevbar i{display:block;height:100%;background:var(--high)}
   .muted{color:var(--muted)} .dim{color:var(--dim)}
-
-  /* ---------- graph ---------- */
-  .tabs{display:flex;gap:7px;margin-bottom:14px;flex-wrap:wrap}
-  .tab{padding:8px 15px;border-radius:8px;border:1px solid var(--line);
-       background:var(--panel);color:var(--muted);cursor:pointer;font:inherit;font-size:13px}
-  .tab.on{background:var(--accent);border-color:var(--accent);color:#06101f;font-weight:600}
-  .graphwrap{display:grid;grid-template-columns:1fr 300px;gap:14px}
-  .canvas{background:var(--panel);border:1px solid var(--line);border-radius:11px;
-          overflow:hidden;position:relative;min-height:520px}
-  svg{display:block;width:100%;height:520px;cursor:grab}
-  svg:active{cursor:grabbing}
-  .legend{position:absolute;left:12px;bottom:12px;display:flex;gap:12px;
-          background:rgba(13,16,23,.85);padding:7px 11px;border-radius:8px;
-          border:1px solid var(--line);font-size:11.5px;color:var(--muted);flex-wrap:wrap}
-  .legend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px}
-  .node{cursor:pointer}
-  .node text{font-size:11px;fill:var(--ink);pointer-events:none}
-  .edge{stroke:#39415380;stroke-width:1.4}
-  .edge.sel{stroke:var(--accent);stroke-width:2.4}
-  .side{background:var(--panel);border:1px solid var(--line);border-radius:11px;
-        padding:15px;max-height:520px;overflow:auto}
-  .kv{display:grid;grid-template-columns:104px 1fr;gap:5px 11px;font-size:12.5px}
+  .toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:6px}
+  .count{font-size:12.5px;color:var(--dim)}
+  .toggle{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;color:var(--muted);cursor:pointer}
+  .toggle input{width:auto;margin:0}
+  .spark{display:flex;align-items:flex-end;gap:3px;height:40px;margin-top:6px}
+  .spark div{flex:1;background:var(--accent);opacity:.55;border-radius:2px 2px 0 0;min-height:2px}
+  .spark div:hover{opacity:.9}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .kv{display:grid;grid-template-columns:120px 1fr;gap:6px 12px;font-size:13px}
   .kv div:nth-child(odd){color:var(--muted)}
-  .bar{height:5px;background:#222836;border-radius:3px;overflow:hidden;margin-top:3px}
-  .bar i{display:block;height:100%;background:var(--accent)}
-  pre{background:#090b0f;border:1px solid var(--line);border-radius:8px;padding:12px;
-      overflow:auto;max-height:400px;font-size:11.5px}
-  details summary{cursor:pointer;color:var(--muted);font-size:13px}
   .empty{color:var(--dim);font-size:13px;padding:14px 0}
-  @media(max-width:860px){.grid,.two,.graphwrap{grid-template-columns:1fr}
-    svg{height:400px}.side{max-height:none}}
+
+  /* bias analysis */
+  .bias-row{cursor:pointer}
+  .bias-detail{background:var(--soft)}
+  .bias-detail td{padding:0}
+  .bias-body{padding:14px 18px;line-height:1.7}
+  .sent{padding:2px 0}
+  .sent.factual{color:var(--dim)}
+  .sent.flag{color:var(--ink)}
+  mark{background:#fde7e7;color:#9b1c1c;padding:0 2px;border-radius:3px;font-weight:600}
+  mark.t-unverified{background:#fef0d9;color:#9a5b06}
+  mark.t-opinion{background:#eae6fd;color:#5b21b6}
+  mark.t-absolutes{background:#e0f0fd;color:#0b5ca8}
+  mark.t-editorializing{background:#fde7f0;color:#9d174d}
+  .flagchip{display:inline-block;font-size:10.5px;color:var(--muted);background:#fff;border:1px solid var(--line);
+    padding:1px 7px;border-radius:6px;margin:0 4px 4px 0}
+  .scorebar{display:inline-block;width:60px;height:6px;border-radius:3px;background:var(--soft);overflow:hidden;vertical-align:middle}
+  .scorebar i{display:block;height:100%}
+
+  /* graphs */
+  .tabs{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+  .tab{padding:9px 16px;border-radius:9px;border:1px solid var(--line);background:#fff;color:var(--muted);
+    cursor:pointer;font:inherit;font-size:13px;font-weight:500;box-shadow:var(--shadow)}
+  .tab.on{background:var(--accent);border-color:var(--accent);color:#fff}
+  .graphwrap{display:grid;grid-template-columns:1fr 300px;gap:16px}
+  .canvas{background:linear-gradient(#fff,#fff) padding-box,var(--line);border:1px solid var(--line);
+    border-radius:12px;overflow:hidden;position:relative;min-height:520px;box-shadow:var(--shadow)}
+  svg{display:block;width:100%;height:520px;cursor:grab}
+  .legend{position:absolute;left:12px;bottom:12px;display:flex;gap:14px;background:rgba(255,255,255,.92);
+    padding:8px 12px;border-radius:9px;border:1px solid var(--line);font-size:11.5px;color:var(--muted);flex-wrap:wrap}
+  .legend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:middle}
+  .node{cursor:pointer} .node text{font-size:11px;fill:var(--ink);pointer-events:none}
+  .side{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px;max-height:520px;
+    overflow:auto;box-shadow:var(--shadow)}
+  .bar{height:6px;background:var(--soft);border-radius:3px;overflow:hidden;margin-top:4px}
+  .bar i{display:block;height:100%;background:var(--accent)}
+  pre{background:#0f1420;color:#d6def0;border-radius:10px;padding:14px;overflow:auto;max-height:420px;font-size:11.5px}
+  details summary{cursor:pointer;color:var(--muted);font-size:13px;font-weight:600}
+  @media(max-width:900px){.dash,.two,.graphwrap{grid-template-columns:1fr}
+    .sidebar{position:static}svg{height:400px}.grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 <header>
-  <div class="brand">Supplier Intelligence <span>/ risk investigation</span></div>
+  <div class="brand"><span class="logo">SI</span>
+    Supplier Intelligence <small>&middot; risk investigation</small></div>
   <nav class="steps">
-    <button class="step active" id="s1" onclick="go(1)">1 &middot; Subject intake</button>
-    <button class="step" id="s2" onclick="go(2)" disabled>2 &middot; Risk dashboard</button>
-    <button class="step" id="s3" onclick="go(3)" disabled>3 &middot; Network drill-down</button>
+    <button class="step active" id="s1" onclick="go(1)"><span class="dot">1</span> Subject intake</button>
+    <button class="step" id="s2" onclick="go(2)" disabled><span class="dot">2</span> Risk dashboard</button>
+    <button class="step" id="s3" onclick="go(3)" disabled><span class="dot">3</span> Network drill-down</button>
   </nav>
 </header>
 
 <main>
-  <!-- ============ 1. INTAKE ============ -->
+  <!-- 1 · INTAKE -->
   <section class="view on" id="view1">
     <div class="intake">
       <div class="card">
         <h2>Subject details</h2>
         <p class="lede">Screened live against OFAC SDN, SEC EDGAR, GLEIF, GDELT and
-          CourtListener. Only the name is required &mdash; every other field
-          sharpens entity resolution and reduces false positives.</p>
-
+          CourtListener. Only the name is required &mdash; every other field sharpens
+          entity resolution and reduces false positives.</p>
         <div class="seg">
           <button id="tOrg" class="on" onclick="setType('organization')">Organization</button>
           <button id="tInd" onclick="setType('individual')">Individual</button>
         </div>
-
         <div class="grid">
           <div class="full">
             <label id="lblName">Legal name <span class="dim">(required)</span></label>
             <input id="f_name" placeholder="ABC Manufacturing Ltd" />
           </div>
-          <div class="full">
-            <label>Known aliases / trading names</label>
+          <div class="full"><label>Known aliases / trading names</label>
             <input id="f_aliases" placeholder="ABC Mfg, ABC Manufacturing Group" />
-            <div class="hint">Comma separated. Matched against every registry alias.</div>
-          </div>
-          <div id="wrapDob" style="display:none">
-            <label>Date of birth</label>
+            <div class="hint">Comma separated. Matched against every registry alias.</div></div>
+          <div id="wrapDob" style="display:none"><label>Date of birth</label>
             <input id="f_dob" placeholder="1963-02-05" />
-            <div class="hint">Used to confirm or rule out an OFAC name hit.</div>
-          </div>
-          <div id="wrapReg">
-            <label>Registration / ID number</label>
-            <input id="f_reg" placeholder="Company number, LEI or national ID" />
-          </div>
-          <div>
-            <label>Country</label>
-            <input id="f_country" placeholder="United States" />
-          </div>
-          <div>
-            <label>City</label>
-            <input id="f_city" placeholder="Cupertino" />
-          </div>
-          <div class="full">
-            <label>Street address</label>
-            <input id="f_address" placeholder="One Apple Park Way" />
-          </div>
-          <div class="full">
-            <label>Website or email domain</label>
-            <input id="f_website" placeholder="https://example.com" />
-          </div>
+            <div class="hint">Corroborates or rules out an OFAC name hit.</div></div>
+          <div id="wrapReg"><label>Registration / ID number</label>
+            <input id="f_reg" placeholder="Company number, LEI or national ID" /></div>
+          <div><label>Country</label><input id="f_country" placeholder="United States" /></div>
+          <div><label>City</label><input id="f_city" placeholder="Cupertino" /></div>
+          <div class="full"><label>Street address</label>
+            <input id="f_address" placeholder="One Apple Park Way" /></div>
+          <div class="full"><label>Website or email domain</label>
+            <input id="f_website" placeholder="https://example.com" /></div>
         </div>
-
         <div class="actions">
           <button class="primary" id="run" onclick="runInvestigation()">Run investigation</button>
           <span class="status" id="status"></span>
@@ -198,46 +230,86 @@
       </div>
 
       <div class="card">
-        <h2>Sample subjects</h2>
-        <div class="chips">
-          <button class="chip" onclick="preset('clean')">Clean &mdash; Kesko Oyj</button>
-          <button class="chip" onclick="preset('risk')">Risk positive &mdash; Wells Fargo</button>
-          <button class="chip" onclick="preset('ambig')">Ambiguous &mdash; ABC Manufacturing</button>
-          <button class="chip" onclick="preset('person')">Individual &mdash; sanctions hit + DOB namesake check</button>
+        <h2>Sample dataset &middot; instant, offline</h2>
+        <p class="lede" style="margin-bottom:14px">Pre-built fictional subjects with 35 tagged
+          adverse-media articles across all five risk categories &mdash; loads instantly, no
+          live calls.</p>
+        <div class="samples" id="samples"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2 · DASHBOARD -->
+  <section class="view" id="view2">
+    <div class="dash">
+      <aside class="sidebar">
+        <div class="card">
+          <div class="filter-group">
+            <h2>Risk categories</h2>
+            <div id="catFilters"></div>
+          </div>
+          <div class="filter-group">
+            <h2>Media objectivity</h2>
+            <div id="biasFilters"></div>
+          </div>
+          <div class="filter-group">
+            <h2>Severity</h2>
+            <label class="fitem" id="sevItem" onclick="toggleSevere()">
+              <input type="checkbox" id="sevChk"/><span class="lab">High severity only (&ge;0.8)</span></label>
+          </div>
+          <button class="clearf" onclick="clearFilters()">Clear all filters</button>
+        </div>
+      </aside>
+
+      <div>
+        <div class="tiles" id="tiles"></div>
+
+        <div class="card">
+          <h2>Adverse media by risk category</h2>
+          <div class="catbars" id="catbars"></div>
+          <div id="timeline" style="margin-top:14px"></div>
+        </div>
+
+        <div class="card">
+          <div class="toolbar">
+            <h2 style="margin:0">Adverse media</h2>
+            <span class="count" id="mediaCount"></span>
+          </div>
+          <div id="mediaTable"></div>
+        </div>
+
+        <div class="card">
+          <div class="toolbar">
+            <h2 style="margin:0">Media bias analysis</h2>
+            <span class="count" id="biasCount"></span>
+            <label class="toggle" style="margin-left:auto">
+              <input type="checkbox" id="onlyFlagged" onchange="renderBias()"/>
+              Show only flagged lines</label>
+          </div>
+          <p class="dim" style="font-size:12.5px;margin:0 0 10px">
+            Each article is scored for objectivity. Loaded, unverified or opinion language is
+            highlighted in the body so sensationalist coverage can be discounted. Click a row to expand.</p>
+          <div id="biasTable"></div>
+        </div>
+
+        <div class="two">
+          <div class="card"><h2>Sanctions &middot; OFAC</h2><div id="sanctions"></div></div>
+          <div class="card"><h2>Risk contributions</h2><div id="contribs"></div></div>
+        </div>
+        <div class="two">
+          <div class="card"><h2>Litigation</h2><div id="litigation"></div></div>
+          <div class="card"><h2>Ownership &amp; officers</h2><div id="ownership"></div></div>
+        </div>
+        <div class="card"><h2>Agent report</h2><div id="report"></div></div>
+        <div class="actions" style="margin-bottom:8px">
+          <button class="primary" onclick="go(3)">Drill down to networks &rarr;</button>
+          <button class="ghost" onclick="go(1)">New investigation</button>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- ============ 2. DASHBOARD ============ -->
-  <section class="view" id="view2">
-    <div class="tiles" id="tiles"></div>
-    <div class="card">
-      <h2>Adverse media &middot; risk tagging</h2>
-      <div class="chips" id="mediaFilters"></div>
-      <div class="chips" style="margin-top:2px">
-        <button class="chip" id="sevFilter" onclick="toggleSevere()">High severity only</button>
-        <span class="dim" style="font-size:12px;align-self:center" id="mediaCount"></span>
-      </div>
-      <div id="timeline"></div>
-      <div id="mediaTable"></div>
-    </div>
-    <div class="two">
-      <div class="card"><h2>Sanctions &middot; OFAC</h2><div id="sanctions"></div></div>
-      <div class="card"><h2>Risk contributions</h2><div id="contribs"></div></div>
-    </div>
-    <div class="two">
-      <div class="card"><h2>Litigation</h2><div id="litigation"></div></div>
-      <div class="card"><h2>Ownership &amp; officers</h2><div id="ownership"></div></div>
-    </div>
-    <div class="card"><h2>Agent report</h2><div id="report"></div></div>
-    <div class="actions" style="margin-bottom:24px">
-      <button class="primary" onclick="go(3)">Drill down to networks &rarr;</button>
-      <button class="ghost" onclick="go(1)">New investigation</button>
-    </div>
-  </section>
-
-  <!-- ============ 3. GRAPHS ============ -->
+  <!-- 3 · GRAPHS -->
   <section class="view" id="view3">
     <div class="tabs">
       <button class="tab on" id="gt0" onclick="setGraph('resolution')">Entity resolution</button>
@@ -245,437 +317,351 @@
       <button class="tab" id="gt2" onclick="setGraph('transactions')">Transaction network</button>
     </div>
     <div class="graphwrap">
-      <div class="canvas">
-        <svg id="svg" viewBox="0 0 900 520" preserveAspectRatio="xMidYMid meet"></svg>
-        <div class="legend" id="legend"></div>
-      </div>
+      <div class="canvas"><svg id="svg" viewBox="0 0 900 520" preserveAspectRatio="xMidYMid meet"></svg>
+        <div class="legend" id="legend"></div></div>
       <div class="side" id="side"><div class="empty">Select a node to inspect it.</div></div>
     </div>
-    <div class="card" style="margin-top:14px"><h2 id="detailTitle">Detail</h2>
-      <div id="graphDetail"></div></div>
-    <div class="actions" style="margin-bottom:24px">
+    <div class="card" style="margin-top:16px"><h2 id="detailTitle">Detail</h2><div id="graphDetail"></div></div>
+    <div class="actions" style="margin-bottom:8px">
       <button class="ghost" onclick="go(2)">&larr; Back to dashboard</button>
       <button class="ghost" onclick="go(1)">New investigation</button>
     </div>
-    <details class="card"><summary>Raw intelligence object (JSON)</summary>
-      <pre id="raw"></pre></details>
+    <details class="card"><summary>Raw intelligence object (JSON)</summary><pre id="raw"></pre></details>
   </section>
 </main>
 
 <script>
-const $ = id => document.getElementById(id);
-const esc = s => String(s ?? "").replace(/[&<>"]/g, c =>
-  ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-const num = n => n == null ? "-" : n.toLocaleString(undefined,{maximumFractionDigits:0});
-const money = n => n == null ? "-" : "$" + n.toLocaleString(undefined,{maximumFractionDigits:0});
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const num=n=>n==null?"-":n.toLocaleString(undefined,{maximumFractionDigits:0});
+const money=n=>n==null?"-":"$"+n.toLocaleString(undefined,{maximumFractionDigits:0});
 
-let DATA = null, TYPE = "organization", GRAPH = "resolution";
-let FILTERS = new Set(), SEVERE_ONLY = false, SELECTED = null;
+const CATEGORIES=[
+  {key:"financial_crime",label:"Financial Crime",color:"#c2410c"},
+  {key:"legal_reputational",label:"Legal & Reputational Risk",color:"#b45309"},
+  {key:"regulatory",label:"FINRA & Regulatory Bodies",color:"#0e7490"},
+  {key:"terrorism_serious_crime",label:"Terrorism & Serious Crime",color:"#b91c1c"},
+  {key:"sanctions",label:"Sanctions & Watchlists",color:"#7c3aed"},
+];
+const CAT_COLOR=Object.fromEntries(CATEGORIES.map(c=>[c.key,c.color]));
 
-/* ---------------- intake ---------------- */
-function setType(t){
-  TYPE = t;
-  $("tOrg").classList.toggle("on", t==="organization");
-  $("tInd").classList.toggle("on", t==="individual");
-  $("wrapDob").style.display = t==="individual" ? "" : "none";
-  $("lblName").innerHTML = t==="individual"
-    ? 'Full name <span class="dim">(required)</span>'
-    : 'Legal name <span class="dim">(required)</span>';
-  $("f_name").placeholder = t==="individual" ? "Jane Q Smith" : "ABC Manufacturing Ltd";
+let DATA=null,TYPE="organization",GRAPH="resolution",SELECTED=null;
+let F={cats:new Set(),bias:new Set(),severe:false};
+
+/* intake */
+function setType(t){TYPE=t;
+  $("tOrg").classList.toggle("on",t==="organization");
+  $("tInd").classList.toggle("on",t==="individual");
+  $("wrapDob").style.display=t==="individual"?"":"none";
+  $("lblName").innerHTML=(t==="individual"?"Full name":"Legal name")+' <span class="dim">(required)</span>';
+  $("f_name").placeholder=t==="individual"?"Jane Q Smith":"ABC Manufacturing Ltd";}
+
+async function loadSamples(){
+  try{
+    const r=await fetch("/api/v1/demo/subjects");const d=await r.json();
+    $("samples").innerHTML=d.subjects.map(s=>`
+      <button class="sample" onclick="loadDemo('${esc(s.id)}')">
+        <b>${esc(s.name)}</b><span>${esc(s.tagline)}</span>
+        <span class="cnt">${s.article_count} adverse-media articles</span></button>`).join("");
+  }catch(e){$("samples").innerHTML='<span class="dim">Sample dataset unavailable.</span>';}
 }
-const PRESETS = {
-  clean:{name:"Kesko Oyj",country:"Finland",website:"https://www.kesko.fi",type:"organization"},
-  risk:{name:"Wells Fargo & Company",country:"United States",type:"organization"},
-  ambig:{name:"ABC Manufacturing",country:"United States",type:"organization"},
-  // Real SDN entry. Screened with a deliberately wrong DOB to show the
-  // namesake check demoting a name hit instead of blindly confirming it.
-  person:{name:"Hasan Nasrallah",dob:"1994",type:"individual"},
-};
-function preset(k){
-  const p = PRESETS[k];
-  setType(p.type);
-  $("f_name").value = p.name; $("f_country").value = p.country || "";
-  $("f_website").value = p.website || ""; $("f_dob").value = p.dob || "";
-  $("f_city").value=""; $("f_address").value=""; $("f_aliases").value=""; $("f_reg").value="";
-  runInvestigation();
+async function loadDemo(id){
+  $("status").className="status";$("status").textContent="Loading sample dataset...";
+  try{
+    const r=await fetch("/api/v1/demo/investigate/"+id);
+    if(!r.ok)throw new Error("not found");
+    DATA=await r.json();afterData("Loaded demo dataset ("+DATA.adverse_media.length+" articles)");
+  }catch(e){$("status").className="status err";$("status").textContent="Failed: "+e.message;}
 }
-
+async function runInvestigation(){
+  const name=$("f_name").value.trim();
+  if(!name){$("status").textContent="Enter a name to screen.";return;}
+  $("run").disabled=true;$("status").className="status";
+  $("status").textContent="Querying OFAC, SEC EDGAR, GLEIF, GDELT and CourtListener...";
+  const t0=performance.now();
+  try{
+    const res=await fetch("/api/v1/supplier/investigate",{method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({name,entity_type:TYPE,
+        country:$("f_country").value.trim()||null,city:$("f_city").value.trim()||null,
+        address:$("f_address").value.trim()||null,website:$("f_website").value.trim()||null,
+        date_of_birth:TYPE==="individual"?($("f_dob").value.trim()||null):null,
+        registration_number:$("f_reg").value.trim()||null,
+        aliases:$("f_aliases").value.split(",").map(s=>s.trim()).filter(Boolean)})});
+    if(!res.ok)throw new Error((await res.json().catch(()=>({}))).detail||res.statusText);
+    DATA=await res.json();
+    afterData(`Completed in ${DATA.duration_seconds}s (round trip ${((performance.now()-t0)/1000).toFixed(1)}s)`);
+  }catch(e){$("status").className="status err";$("status").textContent="Failed: "+e.message;}
+  finally{$("run").disabled=false;}
+}
+function afterData(msg){
+  F={cats:new Set(),bias:new Set(),severe:false};SELECTED=null;
+  $("sevChk").checked=false;$("onlyFlagged").checked=false;
+  $("s2").disabled=false;$("s3").disabled=false;$("status").textContent=msg;
+  renderDashboard();go(2);
+}
 function go(step){
-  if(step>1 && !DATA) return;
-  [1,2,3].forEach(i=>{
-    $("view"+i).classList.toggle("on", i===step);
-    $("s"+i).classList.toggle("active", i===step);
-    $("s"+i).classList.toggle("done", i<step);
-  });
-  if(step===3) drawGraph();
+  if(step>1&&!DATA)return;
+  [1,2,3].forEach(i=>{$("view"+i).classList.toggle("on",i===step);
+    $("s"+i).classList.toggle("active",i===step);$("s"+i).classList.toggle("done",i<step);});
+  if(step===3)drawGraph();
   window.scrollTo({top:0,behavior:"smooth"});
 }
 
-async function runInvestigation(){
-  const name = $("f_name").value.trim();
-  if(!name){ $("status").textContent = "Enter a name to screen."; return; }
-  $("run").disabled = true;
-  $("status").className = "status";
-  $("status").textContent = "Querying OFAC, SEC EDGAR, GLEIF, GDELT and CourtListener...";
-  const t0 = performance.now();
-  try{
-    const res = await fetch("/api/v1/supplier/investigate",{
-      method:"POST", headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({
-        name, entity_type: TYPE,
-        country: $("f_country").value.trim() || null,
-        city: $("f_city").value.trim() || null,
-        address: $("f_address").value.trim() || null,
-        website: $("f_website").value.trim() || null,
-        date_of_birth: TYPE==="individual" ? ($("f_dob").value.trim()||null) : null,
-        registration_number: $("f_reg").value.trim() || null,
-        aliases: $("f_aliases").value.split(",").map(s=>s.trim()).filter(Boolean),
-      })
-    });
-    if(!res.ok) throw new Error((await res.json().catch(()=>({}))).detail || res.statusText);
-    DATA = await res.json();
-    FILTERS.clear(); SEVERE_ONLY = false; SELECTED = null;
-    $("s2").disabled = false; $("s3").disabled = false;
-    $("status").textContent =
-      `Completed in ${DATA.duration_seconds}s (round trip ${((performance.now()-t0)/1000).toFixed(1)}s)`;
-    renderDashboard();
-    go(2);
-  }catch(e){
-    $("status").className = "status err";
-    $("status").textContent = "Failed: " + e.message;
-  }finally{ $("run").disabled = false; }
-}
-
-/* ---------------- dashboard ---------------- */
+/* dashboard */
 function renderDashboard(){
-  const d = DATA, s = d.supplier, r = d.risk, ms = d.media_summary, t = d.transactions;
+  const d=DATA,s=d.supplier,r=d.risk,ms=d.media_summary,t=d.transactions;
+  const catCount=Object.fromEntries(CATEGORIES.map(c=>[c.key,0]));
+  (ms.categories||[]).forEach(c=>catCount[c.key]=c.count);
 
-  $("tiles").innerHTML = `
+  $("tiles").innerHTML=`
     <div class="tile"><div class="k">Risk score</div>
       <div class="v" style="color:var(--${r.level})">${r.score}</div>
-      <div class="s"><span class="badge ${r.level}">${r.level.toUpperCase()}</span></div></div>
-    <div class="tile"><div class="k">Resolved identity</div>
-      <div class="v" style="font-size:16px;margin-top:9px">${esc(s.name)}</div>
-      <div class="s">${esc(s.status)} &middot; confidence ${s.identity_confidence.toFixed(2)}</div></div>
+      <div class="s"><span class="badge b-${r.level}">${r.level.toUpperCase()}</span></div></div>
+    <div class="tile"><div class="k">Identity</div>
+      <div class="v" style="font-size:15px;margin-top:9px">${esc(s.name)}</div>
+      <div class="s">${esc(s.status)} &middot; ${s.identity_confidence.toFixed(2)}</div></div>
     <div class="tile"><div class="k">Sanctions</div>
-      <div class="v" style="font-size:19px;margin-top:8px;color:var(--${d.sanctions.match?"critical":"low"})">
-        ${d.sanctions.match ? "MATCH" : "No match"}</div>
-      <div class="s">${num(d.sanctions.list_size)} SDN names screened</div></div>
-    <div class="tile"><div class="k">Adverse media</div>
-      <div class="v">${ms.total}</div>
-      <div class="s">${ms.categories.length} risk categor${ms.categories.length===1?"y":"ies"}</div></div>
-    <div class="tile"><div class="k">Litigation</div>
-      <div class="v">${(d.litigation.cases||[]).length}</div>
-      <div class="s">${d.litigation.available ? "federal dockets" : "source unavailable"}</div></div>
-    <div class="tile"><div class="k">Insider transactions</div>
-      <div class="v">${t.available ? t.summary.count : 0}</div>
-      <div class="s">${t.available ? t.summary.insiders + " insiders" : "none filed"}</div></div>`;
+      <div class="v" style="font-size:18px;margin-top:8px;color:var(--${d.sanctions.match?"critical":"low"})">
+        ${d.sanctions.match?"MATCH":"No match"}</div>
+      <div class="s">${num(d.sanctions.list_size)} SDN names</div></div>
+    <div class="tile"><div class="k">Adverse media</div><div class="v">${ms.total}</div>
+      <div class="s">${ms.bias.polarized} polarized &middot; ${ms.bias.factual} factual</div></div>
+    <div class="tile"><div class="k">Litigation</div><div class="v">${(d.litigation.cases||[]).length}</div>
+      <div class="s">${d.litigation.available?"dockets":"unavailable"}</div></div>
+    <div class="tile"><div class="k">Insider txns</div>
+      <div class="v">${t.available?t.summary.count:0}</div>
+      <div class="s">${t.available?t.summary.insiders+" insiders":"none filed"}</div></div>`;
 
-  // risk category filter chips
-  $("mediaFilters").innerHTML = ms.categories.length
-    ? ms.categories.map(c=>`<button class="chip" data-cat="${esc(c.key)}"
-         onclick="toggleFilter('${esc(c.key)}')">${esc(c.label)}
-         <span class="n">${c.count}</span></button>`).join("")
-    : `<span class="dim" style="font-size:12.5px">No adverse media matched.</span>`;
+  // left category filters
+  $("catFilters").innerHTML=CATEGORIES.map(c=>`
+    <label class="fitem" data-cat="${c.key}" onclick="toggleCat('${c.key}')">
+      <span class="swatch" style="background:${c.color}"></span>
+      <span class="lab">${esc(c.label)}</span>
+      <span class="cnt">${catCount[c.key]||0}</span></label>`).join("");
 
-  // timeline
-  const tl = ms.timeline || [];
-  $("timeline").innerHTML = tl.length > 1 ? `
+  const bc=ms.bias;
+  const biasDefs=[["Polarized",bc.polarized,"polarized"],["Mixed",bc.mixed,"mixed"],["Factual",bc.factual,"factual"]];
+  $("biasFilters").innerHTML=biasDefs.map(([label,n,cls])=>`
+    <label class="fitem" data-bias="${label}" onclick="toggleBias('${label}')">
+      <span class="badge b-${cls}" style="padding:1px 8px">${label}</span>
+      <span class="lab"></span><span class="cnt">${n}</span></label>`).join("");
+
+  // category distribution bars
+  const maxc=Math.max(1,...CATEGORIES.map(c=>catCount[c.key]||0));
+  $("catbars").innerHTML=CATEGORIES.map(c=>{const n=catCount[c.key]||0;return `
+    <div class="catbar"><div class="catname"><span class="swatch" style="background:${c.color}"></span>${esc(c.label)}</div>
+      <div class="track"><i style="width:${Math.round(n/maxc*100)}%;background:${c.color}"></i></div>
+      <div class="num">${n}</div></div>`;}).join("");
+
+  const tl=ms.timeline||[];
+  $("timeline").innerHTML=tl.length>1?`
+    <div class="dim" style="font-size:11px;margin-bottom:3px">Volume by month</div>
     <div class="spark">${(()=>{const mx=Math.max(...tl.map(x=>x.count));
-      return tl.map(x=>`<div style="height:${Math.round(x.count/mx*100)}%"
-        title="${esc(x.month)}: ${x.count}"></div>`).join("")})()}</div>
+      return tl.map(x=>`<div style="height:${Math.round(x.count/mx*100)}%" title="${esc(x.month)}: ${x.count}"></div>`).join("")})()}</div>
     <div class="dim" style="font-size:11px;display:flex;justify-content:space-between;margin-top:3px">
-      <span>${esc(tl[0].month)}</span><span>${esc(tl[tl.length-1].month)}</span></div>` : "";
+      <span>${esc(tl[0].month)}</span><span>${esc(tl[tl.length-1].month)}</span></div>`:"";
 
-  renderMedia();
-
-  // sanctions
-  const sc = d.sanctions;
-  $("sanctions").innerHTML = sc.match ? `
-    <div><span class="badge critical">${esc(sc.match_strength||"match").toUpperCase()}</span>
+  // sanctions / contribs / litigation / ownership / report
+  const sc=d.sanctions;
+  $("sanctions").innerHTML=sc.match?`
+    <div><span class="badge b-critical">${esc(sc.match_strength||"match").toUpperCase()}</span>
       <b style="margin-left:8px">${esc(sc.matched_entity?.name)}</b></div>
     <div class="kv" style="margin-top:11px">
       <div>Program</div><div>${esc(sc.matched_entity?.program||"-")}</div>
-      <div>Type</div><div>${esc(sc.matched_entity?.entity_type||"-")}</div>
-      <div>Name similarity</div><div>${sc.confidence}</div>
-      ${sc.dob_check?`<div>DOB check</div><div><span class="badge ${
-        sc.dob_check.status==="match"?"critical":sc.dob_check.status==="conflict"?"low":"neutral"
-      }">${esc(sc.dob_check.status)}</span> <span class="dim">${esc(sc.dob_check.note)}</span></div>`:""}
-      ${sc.matched_entity?.remarks?`<div>Remarks</div><div class="dim">${esc(sc.matched_entity.remarks).slice(0,260)}</div>`:""}
-    </div>` : `
-    <div><span class="badge low">NO MATCH</span>
-      <span class="dim" style="margin-left:8px">screened against ${num(sc.list_size)} SDN names</span></div>
-    ${sc.closest_entry?`<div class="dim" style="margin-top:9px;font-size:12.5px">
-      Closest entry: ${esc(sc.closest_entry.name)} (similarity ${sc.closest_entry.similarity})</div>`:""}`;
+      <div>Similarity</div><div>${sc.confidence}</div>
+      ${sc.dob_check?`<div>DOB check</div><div><span class="badge ${sc.dob_check.status==="match"?"b-critical":sc.dob_check.status==="conflict"?"b-low":"b-neutral"}">${esc(sc.dob_check.status)}</span> <span class="dim">${esc(sc.dob_check.note)}</span></div>`:""}
+      ${sc.matched_entity?.remarks?`<div>Remarks</div><div class="dim">${esc(sc.matched_entity.remarks).slice(0,240)}</div>`:""}</div>`:`
+    <div><span class="badge b-low">NO MATCH</span>
+      <span class="dim" style="margin-left:8px">screened against ${num(sc.list_size)} SDN names</span></div>`;
 
-  $("contribs").innerHTML = r.contributions.length ? `<table>
+  $("contribs").innerHTML=r.contributions.length?`<table>
     <tr><th>Signal</th><th>Points</th><th>Source</th></tr>
-    ${r.contributions.map(c=>`<tr><td>${esc(c.category.replace(/_/g," "))}</td>
-      <td>+${c.points}</td><td class="dim">${esc(c.source)}</td></tr>`).join("")}
-    </table>` : `<div class="empty">No risk signals fired.</div>`;
+    ${r.contributions.map(c=>`<tr><td>${esc(c.category.replace(/_/g," "))}</td><td>+${c.points}</td>
+      <td class="dim">${esc(c.source)}</td></tr>`).join("")}</table>`:`<div class="empty">No risk signals fired.</div>`;
 
-  const cases = d.litigation.cases||[];
-  $("litigation").innerHTML = cases.length ? `<table>
+  const cases=d.litigation.cases||[];
+  $("litigation").innerHTML=cases.length?`<table>
     <tr><th>Case</th><th>Court</th><th>Filed</th></tr>
     ${cases.slice(0,10).map(c=>`<tr><td>${c.url?`<a href="${esc(c.url)}" target="_blank" rel="noopener">${esc(c.case)}</a>`:esc(c.case)}</td>
-      <td class="dim">${esc(c.court)}</td><td class="dim">${esc(c.date)}</td></tr>`).join("")}
-    </table>` : `<div class="empty">${esc(d.litigation.note||"No matching dockets.")}</div>`;
+      <td class="dim">${esc(c.court)}</td><td class="dim">${esc(c.date)}</td></tr>`).join("")}</table>`:`<div class="empty">${esc(d.litigation.note||"No matching dockets.")}</div>`;
 
-  $("ownership").innerHTML = d.ownership.length ? `<table>
+  $("ownership").innerHTML=d.ownership.length?`<table>
     <tr><th>Name</th><th>Role</th><th>Conf.</th></tr>
-    ${d.ownership.slice(0,12).map(o=>`<tr><td>${esc(o.name)}</td>
-      <td class="dim">${esc(o.role)}</td><td>${(o.confidence??0).toFixed(2)}</td></tr>`).join("")}
-    </table>` : `<div class="empty">No ownership or officer records found.</div>`;
+    ${d.ownership.slice(0,12).map(o=>`<tr><td>${esc(o.name)}</td><td class="dim">${esc(o.role)}</td>
+      <td>${(o.confidence??0).toFixed(2)}</td></tr>`).join("")}</table>`:`<div class="empty">No ownership records.</div>`;
 
-  const a = d.agent_summary;
-  $("report").innerHTML = `
-    <div class="dim" style="font-size:11.5px;margin-bottom:8px">${esc(a.generated_by||"")}</div>
+  const a=d.agent_summary;
+  $("report").innerHTML=`<div class="dim" style="font-size:11.5px;margin-bottom:8px">${esc(a.generated_by||"")}</div>
     <p style="margin:0 0 12px">${esc(a.summary)}</p>
-    <div class="kv">
-      <div>Identity</div><div>${esc(a.identity_assessment)}</div>
-      <div>Ownership</div><div>${esc(a.ownership_assessment)}</div>
-      <div>Sanctions</div><div>${esc(a.sanctions_assessment)}</div>
+    <div class="kv"><div>Sanctions</div><div>${esc(a.sanctions_assessment)}</div>
       <div>Litigation</div><div>${esc(a.litigation_assessment)}</div>
       <div>Adverse media</div><div>${esc(a.adverse_media_assessment)}</div>
-      <div>Recommendation</div><div><b>${esc(a.recommendation)}</b></div>
-    </div>`;
+      <div>Recommendation</div><div><b>${esc(a.recommendation)}</b></div></div>`;
 
-  $("raw").textContent = JSON.stringify(d, null, 2);
+  $("raw").textContent=JSON.stringify(d,null,2);
+  syncFilterUI();renderMedia();renderBias();
 }
 
-function toggleFilter(key){
-  FILTERS.has(key) ? FILTERS.delete(key) : FILTERS.add(key);
-  document.querySelectorAll("#mediaFilters .chip").forEach(c=>
-    c.classList.toggle("on", FILTERS.has(c.dataset.cat)));
-  renderMedia();
+function toggleCat(k){F.cats.has(k)?F.cats.delete(k):F.cats.add(k);syncFilterUI();renderMedia();renderBias();}
+function toggleBias(l){F.bias.has(l)?F.bias.delete(l):F.bias.add(l);syncFilterUI();renderMedia();renderBias();}
+function toggleSevere(){F.severe=!F.severe;$("sevChk").checked=F.severe;renderMedia();renderBias();}
+function clearFilters(){F={cats:new Set(),bias:new Set(),severe:false};
+  $("sevChk").checked=false;syncFilterUI();renderMedia();renderBias();}
+function syncFilterUI(){
+  document.querySelectorAll("#catFilters .fitem").forEach(el=>el.classList.toggle("on",F.cats.has(el.dataset.cat)));
+  document.querySelectorAll("#biasFilters .fitem").forEach(el=>el.classList.toggle("on",F.bias.has(el.dataset.bias)));
 }
-function toggleSevere(){
-  SEVERE_ONLY = !SEVERE_ONLY;
-  $("sevFilter").classList.toggle("on", SEVERE_ONLY);
-  renderMedia();
-}
-function filteredMedia(){
+function filtered(){
   return (DATA.adverse_media||[]).filter(a=>{
-    if(SEVERE_ONLY && a.severity < 0.8) return false;
-    if(FILTERS.size===0) return true;
-    return (a.category_keys||[]).some(k=>FILTERS.has(k));
-  });
+    if(F.severe&&a.severity<0.8)return false;
+    if(F.cats.size&&!(a.category_keys||[]).some(k=>F.cats.has(k)))return false;
+    if(F.bias.size&&!F.bias.has((a.bias||{}).label))return false;
+    return true;});
 }
+function catTag(c){return `<span class="tag" style="background:${CAT_COLOR[c.key]||'#64748b'}">${esc(c.label.split(" ")[0])}</span>`;}
+function biasBadge(b){const cls=(b&&b.label||"").toLowerCase();return `<span class="badge b-${cls||'neutral'}">${esc(b?b.label:"-")}</span>`;}
+
 function renderMedia(){
-  const rows = filteredMedia();
-  $("mediaCount").textContent =
-    `${rows.length} of ${(DATA.adverse_media||[]).length} articles`;
-  $("mediaTable").innerHTML = rows.length ? `<table style="margin-top:10px">
-    <tr><th>Headline</th><th>Source</th><th>Date</th><th>Risk tags</th><th>Sev.</th></tr>
+  const rows=filtered();
+  $("mediaCount").textContent=`${rows.length} of ${(DATA.adverse_media||[]).length} articles`;
+  $("mediaTable").innerHTML=rows.length?`<table>
+    <tr><th>Headline</th><th>Source</th><th>Date</th><th>Risk tags</th><th>Objectivity</th><th>Sev.</th></tr>
     ${rows.map(a=>`<tr>
       <td>${a.url?`<a href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.title)}</a>`:esc(a.title)}</td>
       <td class="dim">${esc(a.source)}</td><td class="dim">${esc(a.date)}</td>
-      <td><div class="tags">${(a.categories||[]).map(c=>`<span class="tag">${esc(c.label)}</span>`).join("")}</div></td>
-      <td><span class="sev"><i style="width:${Math.round(a.severity*100)}%"></i></span></td>
-    </tr>`).join("")}</table>`
-    : `<div class="empty">No articles match the selected filters.</div>`;
+      <td><div class="tags">${(a.categories||[]).map(catTag).join("")}</div></td>
+      <td>${biasBadge(a.bias)}</td>
+      <td><span class="sevbar"><i style="width:${Math.round(a.severity*100)}%"></i></span></td></tr>`).join("")}
+    </table>`:`<div class="empty">No articles match the selected filters.</div>`;
 }
 
-/* ---------------- graphs ---------------- */
-function setGraph(kind){
-  GRAPH = kind; SELECTED = null;
-  ["resolution","network","transactions"].forEach((k,i)=>
-    $("gt"+i).classList.toggle("on", k===kind));
-  drawGraph();
+function annotate(sent){
+  if(!sent.spans||!sent.spans.length)return esc(sent.text);
+  let html="",last=0;
+  for(const sp of [...sent.spans].sort((a,b)=>a.start-b.start)){
+    if(sp.start<last)continue;
+    html+=esc(sent.text.slice(last,sp.start));
+    html+=`<mark class="t-${esc(sp.type)}" title="${esc(sp.type.replace(/_/g," "))}">${esc(sent.text.slice(sp.start,sp.end))}</mark>`;
+    last=sp.end;}
+  html+=esc(sent.text.slice(last));return html;
 }
-
-/* Small force-directed layout: repulsion between all nodes, spring along
-   edges, gravity to centre. Deterministic seeding so re-renders are stable. */
-function layout(nodes, edges, W, H){
-  const n = nodes.length;
-  if(!n) return;
-  nodes.forEach((nd,i)=>{
-    const ang = (i/n)*Math.PI*2, rad = i===0 ? 0 : Math.min(W,H)*0.32;
-    nd.x = W/2 + Math.cos(ang)*rad; nd.y = H/2 + Math.sin(ang)*rad;
-    nd.vx = 0; nd.vy = 0;
-  });
-  const idx = Object.fromEntries(nodes.map((d,i)=>[d.id,i]));
-  for(let step=0; step<320; step++){
-    for(let i=0;i<n;i++) for(let j=i+1;j<n;j++){
-      const a=nodes[i], b=nodes[j];
-      let dx=b.x-a.x, dy=b.y-a.y, d2=dx*dx+dy*dy || 0.01;
-      const f = 17000/d2, d=Math.sqrt(d2);
-      const fx=f*dx/d, fy=f*dy/d;
-      a.vx-=fx; a.vy-=fy; b.vx+=fx; b.vy+=fy;
-    }
-    edges.forEach(e=>{
-      const a=nodes[idx[e.source]], b=nodes[idx[e.target]];
-      if(!a||!b) return;
-      const dx=b.x-a.x, dy=b.y-a.y, d=Math.sqrt(dx*dx+dy*dy)||0.01;
-      const target = 185 - 62*(e.weight||0.5);
-      const f = (d-target)*0.035;
-      const fx=f*dx/d, fy=f*dy/d;
-      a.vx+=fx; a.vy+=fy; b.vx-=fx; b.vy-=fy;
-    });
-    nodes.forEach((nd,i)=>{
-      nd.vx += (W/2-nd.x)*(i===0?0.06:0.005);
-      nd.vy += (H/2-nd.y)*(i===0?0.06:0.007);
-      nd.x += Math.max(-16,Math.min(16,nd.vx)); nd.y += Math.max(-16,Math.min(16,nd.vy));
-      nd.vx*=0.82; nd.vy*=0.82;
-      nd.x=Math.max(60,Math.min(W-60,nd.x)); nd.y=Math.max(34,Math.min(H-26,nd.y));
-    });
-  }
+function renderBias(){
+  const onlyFlagged=$("onlyFlagged").checked;
+  const rows=filtered().filter(a=>a.bias&&a.bias.total_sentences>0);
+  const polar=rows.filter(a=>a.bias.label!=="Factual").length;
+  $("biasCount").textContent=`${rows.length} articles · ${polar} flagged as non-factual`;
+  rows.sort((a,b)=>b.bias.score-a.bias.score);
+  const barColor=l=>l==="Polarized"?"var(--polarized)":l==="Mixed"?"var(--mixed)":"var(--factual)";
+  $("biasTable").innerHTML=rows.length?`<table>
+    <tr><th>Headline</th><th>Source</th><th>Objectivity</th><th>Bias score</th><th>Flagged lines</th></tr>
+    ${rows.map((a,i)=>{const b=a.bias;const flagged=b.sentences.filter(s=>s.biased);
+      const shown=onlyFlagged?flagged:b.sentences;
+      return `<tr class="bias-row" onclick="toggleDetail(${i})">
+        <td>${esc(a.title)}</td><td class="dim">${esc(a.source)}</td>
+        <td>${biasBadge(b)}</td>
+        <td><span class="scorebar"><i style="width:${Math.round(b.score*100)}%;background:${barColor(b.label)}"></i></span>
+          <span class="dim" style="font-size:12px">${b.score.toFixed(2)}</span></td>
+        <td>${flagged.length}/${b.total_sentences}</td></tr>
+      <tr class="bias-detail" id="bd${i}" style="display:none"><td colspan="5">
+        <div class="bias-body">
+          ${(b.bias_types||[]).map(t=>`<span class="flagchip">${esc(t.label)} ·${t.count}</span>`).join("")}
+          <div style="margin-top:8px">
+          ${shown.length?shown.map(s=>`<div class="sent ${s.biased?"flag":"factual"}">${annotate(s)}</div>`).join(""):'<span class="dim">No flagged lines.</span>'}
+          </div></div></td></tr>`;}).join("")}
+    </table>`:`<div class="empty">No articles with analyzable content.</div>`;
 }
+function toggleDetail(i){const el=$("bd"+i);if(el)el.style.display=el.style.display==="none"?"":"none";}
 
-const NODE_STYLE = {
-  query:{c:"#5b9dff", r:16}, selected:{c:"#3fb950", r:15}, match:{c:"#8b6cff", r:12},
-  rejected:{c:"#5b6478", r:9}, entity:{c:"#5b9dff", r:17}, person:{c:"#d29922", r:11},
-  parent:{c:"#8b6cff", r:13},
-};
-const LEGENDS = {
-  resolution:[["query","Search subject"],["selected","Selected identity"],
-              ["match","Above threshold"],["rejected","Rejected"]],
+/* graphs (unchanged logic, light theme) */
+function setGraph(kind){GRAPH=kind;SELECTED=null;
+  ["resolution","network","transactions"].forEach((k,i)=>$("gt"+i).classList.toggle("on",k===kind));drawGraph();}
+function layout(nodes,edges,W,H){
+  const n=nodes.length;if(!n)return;
+  nodes.forEach((nd,i)=>{const ang=(i/n)*Math.PI*2,rad=i===0?0:Math.min(W,H)*0.34;
+    nd.x=W/2+Math.cos(ang)*rad;nd.y=H/2+Math.sin(ang)*rad;nd.vx=0;nd.vy=0;});
+  const idx=Object.fromEntries(nodes.map((d,i)=>[d.id,i]));
+  for(let step=0;step<320;step++){
+    for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){const a=nodes[i],b=nodes[j];
+      let dx=b.x-a.x,dy=b.y-a.y,d2=dx*dx+dy*dy||0.01;const f=17000/d2,d=Math.sqrt(d2);
+      const fx=f*dx/d,fy=f*dy/d;a.vx-=fx;a.vy-=fy;b.vx+=fx;b.vy+=fy;}
+    edges.forEach(e=>{const a=nodes[idx[e.source]],b=nodes[idx[e.target]];if(!a||!b)return;
+      const dx=b.x-a.x,dy=b.y-a.y,d=Math.sqrt(dx*dx+dy*dy)||0.01;
+      const target=185-62*(e.weight||0.5),f=(d-target)*0.035,fx=f*dx/d,fy=f*dy/d;
+      a.vx+=fx;a.vy+=fy;b.vx-=fx;b.vy-=fy;});
+    nodes.forEach((nd,i)=>{nd.vx+=(W/2-nd.x)*(i===0?0.06:0.005);nd.vy+=(H/2-nd.y)*(i===0?0.06:0.007);
+      nd.x+=Math.max(-16,Math.min(16,nd.vx));nd.y+=Math.max(-16,Math.min(16,nd.vy));
+      nd.vx*=0.82;nd.vy*=0.82;nd.x=Math.max(60,Math.min(W-60,nd.x));nd.y=Math.max(34,Math.min(H-26,nd.y));});}}
+const NODE_STYLE={query:{c:"#2563eb",r:16},selected:{c:"#059669",r:15},match:{c:"#7c3aed",r:12},
+  rejected:{c:"#94a3b8",r:9},entity:{c:"#2563eb",r:17},person:{c:"#d97706",r:11},parent:{c:"#7c3aed",r:13}};
+const LEGENDS={resolution:[["query","Search subject"],["selected","Selected identity"],["match","Above threshold"],["rejected","Rejected"]],
   network:[["entity","Resolved entity"],["person","Officer / director"],["parent","Corporate parent"]],
-  transactions:[["entity","Issuer"],["person","Insider (Form 4 filer)"]],
-};
-
+  transactions:[["entity","Issuer"],["person","Insider (Form 4 filer)"]]};
 function drawGraph(){
-  if(!DATA) return;
-  const g = DATA.graph[GRAPH] || {nodes:[],edges:[]};
-  const svg = $("svg"), W=900, H=520;
-  const nodes = g.nodes.map(n=>({...n})), edges = g.edges;
-
-  $("legend").innerHTML = (LEGENDS[GRAPH]||[]).map(([k,label])=>
-    `<span><i style="background:${NODE_STYLE[k].c}"></i>${esc(label)}</span>`).join("");
-
-  if(!nodes.length){
-    svg.innerHTML = `<text x="${W/2}" y="${H/2}" text-anchor="middle" fill="#6b7689"
-      font-size="13">${GRAPH==="transactions"
-        ? esc(DATA.transactions.note || "No transaction data for this entity.")
-        : "No graph data."}</text>`;
-    $("side").innerHTML = `<div class="empty">Nothing to inspect.</div>`;
-    renderGraphDetail();
-    return;
-  }
-
-  layout(nodes, edges, W, H);
-  const pos = Object.fromEntries(nodes.map(n=>[n.id,n]));
-
-  const edgeSvg = edges.map((e,i)=>{
-    const a=pos[e.source], b=pos[e.target];
-    if(!a||!b) return "";
-    const w = 1 + (e.weight||0.3)*2.6;
-    const col = e.kind==="transaction"
-      ? (e.direction==="acquired" ? "#3fb95099" : "#f0883e99") : "#39415380";
-    return `<line class="edge" data-edge="${i}" x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}"
-      stroke="${col}" stroke-width="${w}"/>`;
-  }).join("");
-
-  const nodeSvg = nodes.map(n=>{
-    const st = NODE_STYLE[n.type] || {c:"#5b6478", r:10};
-    const label = n.label.length>26 ? n.label.slice(0,25)+"…" : n.label;
-    return `<g class="node" data-id="${esc(n.id)}" onclick="selectNode('${esc(n.id)}')">
-      <circle cx="${n.x}" cy="${n.y}" r="${st.r}" fill="${st.c}"
-        stroke="${SELECTED===n.id?"#fff":"#0d1017"}" stroke-width="${SELECTED===n.id?2.5:2}"/>
-      <text x="${n.x}" y="${n.y + st.r + 13}" text-anchor="middle">${esc(label)}</text>
-    </g>`;
-  }).join("");
-
-  svg.innerHTML = edgeSvg + nodeSvg;
-  if(SELECTED) renderSide(nodes.find(n=>n.id===SELECTED));
-  else $("side").innerHTML = `<div class="empty">Select a node to inspect it.</div>`;
+  if(!DATA)return;const g=DATA.graph[GRAPH]||{nodes:[],edges:[]};const svg=$("svg"),W=900,H=520;
+  const nodes=g.nodes.map(n=>({...n})),edges=g.edges;
+  $("legend").innerHTML=(LEGENDS[GRAPH]||[]).map(([k,l])=>`<span><i style="background:${NODE_STYLE[k].c}"></i>${esc(l)}</span>`).join("");
+  if(!nodes.length){svg.innerHTML=`<text x="${W/2}" y="${H/2}" text-anchor="middle" fill="#8b94a3" font-size="13">${GRAPH==="transactions"?esc(DATA.transactions.note||"No transaction data."):"No graph data."}</text>`;
+    $("side").innerHTML=`<div class="empty">Nothing to inspect.</div>`;renderGraphDetail();return;}
+  layout(nodes,edges,W,H);const pos=Object.fromEntries(nodes.map(n=>[n.id,n]));
+  const edgeSvg=edges.map(e=>{const a=pos[e.source],b=pos[e.target];if(!a||!b)return"";
+    const w=1+(e.weight||0.3)*2.4;const col=e.kind==="transaction"?(e.direction==="acquired"?"#05966988":"#ea580c88"):"#cbd2dc";
+    return `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="${col}" stroke-width="${w}"/>`;}).join("");
+  const nodeSvg=nodes.map(n=>{const st=NODE_STYLE[n.type]||{c:"#94a3b8",r:10};
+    const label=n.label.length>26?n.label.slice(0,25)+"…":n.label;
+    return `<g class="node" onclick="selectNode('${esc(n.id)}')">
+      <circle cx="${n.x}" cy="${n.y}" r="${st.r}" fill="${st.c}" stroke="${SELECTED===n.id?"#141a24":"#fff"}" stroke-width="${SELECTED===n.id?2.5:2}"/>
+      <text x="${n.x}" y="${n.y+st.r+13}" text-anchor="middle">${esc(label)}</text></g>`;}).join("");
+  svg.innerHTML=edgeSvg+nodeSvg;
+  if(SELECTED)renderSide(nodes.find(n=>n.id===SELECTED));else $("side").innerHTML=`<div class="empty">Select a node to inspect it.</div>`;
   renderGraphDetail();
 }
-
-function selectNode(id){ SELECTED = id; drawGraph(); }
-
+function selectNode(id){SELECTED=id;drawGraph();}
 function renderSide(n){
-  if(!n){ $("side").innerHTML = `<div class="empty">Select a node.</div>`; return; }
-  const g = DATA.graph[GRAPH];
-  const linked = g.edges.filter(e=>e.source===n.id||e.target===n.id);
-  let html = `<div style="font-weight:600;margin-bottom:9px">${esc(n.label)}</div>
-    <div class="kv">
-      <div>Type</div><div>${esc(n.type)}</div>
-      ${n.source?`<div>Source</div><div>${esc(n.source)}</div>`:""}
-      ${n.confidence!=null?`<div>Confidence</div><div>${n.confidence.toFixed(2)}
-        <div class="bar"><i style="width:${Math.round(n.confidence*100)}%"></i></div></div>`:""}
-      ${n.detail?`<div>Detail</div><div class="dim">${esc(n.detail)}</div>`:""}
-    </div>`;
-  if(n.breakdown && Object.keys(n.breakdown).length){
-    html += `<div style="margin-top:13px"><h2>Match features</h2><div class="kv">` +
-      Object.entries(n.breakdown).map(([k,v])=>
-        `<div>${esc(k)}</div><div>${v.toFixed(2)}
-          <div class="bar"><i style="width:${Math.round(v*100)}%"></i></div></div>`).join("") +
-      `</div></div>`;
-  }
-  const txEdge = linked.find(e=>e.kind==="transaction");
-  if(txEdge){
-    html += `<div style="margin-top:13px"><h2>Filed transactions</h2><div class="kv">
-      <div>Count</div><div>${txEdge.count}</div>
-      <div>Shares</div><div>${num(txEdge.shares)}</div>
-      <div>Acquired</div><div>${money(txEdge.acquired_value)}</div>
-      <div>Disposed</div><div>${money(txEdge.disposed_value)}</div>
-    </div></div>`;
-  }
-  html += `<div class="dim" style="margin-top:13px;font-size:12px">${linked.length} connection(s)</div>`;
-  $("side").innerHTML = html;
+  if(!n){$("side").innerHTML=`<div class="empty">Select a node.</div>`;return;}
+  const g=DATA.graph[GRAPH];const linked=g.edges.filter(e=>e.source===n.id||e.target===n.id);
+  let h=`<div style="font-weight:600;margin-bottom:9px">${esc(n.label)}</div><div class="kv">
+    <div>Type</div><div>${esc(n.type)}</div>${n.source?`<div>Source</div><div>${esc(n.source)}</div>`:""}
+    ${n.confidence!=null?`<div>Confidence</div><div>${n.confidence.toFixed(2)}<div class="bar"><i style="width:${Math.round(n.confidence*100)}%"></i></div></div>`:""}
+    ${n.detail?`<div>Detail</div><div class="dim">${esc(n.detail)}</div>`:""}</div>`;
+  if(n.breakdown&&Object.keys(n.breakdown).length){h+=`<div style="margin-top:13px"><h2>Match features</h2><div class="kv">`+
+    Object.entries(n.breakdown).map(([k,v])=>`<div>${esc(k)}</div><div>${v.toFixed(2)}<div class="bar"><i style="width:${Math.round(v*100)}%"></i></div></div>`).join("")+`</div></div>`;}
+  const tx=linked.find(e=>e.kind==="transaction");
+  if(tx){h+=`<div style="margin-top:13px"><h2>Filed transactions</h2><div class="kv">
+    <div>Count</div><div>${tx.count}</div><div>Shares</div><div>${num(tx.shares)}</div>
+    <div>Acquired</div><div>${money(tx.acquired_value)}</div><div>Disposed</div><div>${money(tx.disposed_value)}</div></div></div>`;}
+  h+=`<div class="dim" style="margin-top:13px;font-size:12px">${linked.length} connection(s)</div>`;$("side").innerHTML=h;
 }
-
 function renderGraphDetail(){
-  const d = DATA;
-  if(GRAPH === "resolution"){
-    const er = d.entity_resolution;
-    $("detailTitle").textContent = "Why this identity was selected";
-    const rows = [er.selected, ...er.alternatives].filter(Boolean);
-    $("graphDetail").innerHTML = rows.length ? `<table>
-      <tr><th>Candidate</th><th>Source</th><th>Confidence</th><th>Feature breakdown</th></tr>
-      ${rows.map((c,i)=>`<tr>
-        <td>${i===0?"<b>":""}${esc(c.name)}${i===0?"</b> <span class='badge low'>selected</span>":""}</td>
+  const d=DATA;
+  if(GRAPH==="resolution"){const er=d.entity_resolution;$("detailTitle").textContent="Why this identity was selected";
+    const rows=[er.selected,...er.alternatives].filter(Boolean);
+    $("graphDetail").innerHTML=rows.length?`<table><tr><th>Candidate</th><th>Source</th><th>Confidence</th><th>Feature breakdown</th></tr>
+      ${rows.map((c,i)=>`<tr><td>${i===0?"<b>":""}${esc(c.name)}${i===0?"</b> <span class='badge b-low'>selected</span>":""}</td>
         <td class="dim">${esc(c.source)}</td>
         <td>${c.confidence.toFixed(2)}<div class="bar"><i style="width:${Math.round(c.confidence*100)}%"></i></div></td>
-        <td class="dim">${Object.entries(c.confidence_breakdown||{})
-            .map(([k,v])=>`${esc(k)} ${v.toFixed(2)}`).join(" &middot; ")}</td>
-      </tr>`).join("")}</table>
-      <div class="dim" style="margin-top:9px;font-size:12px">
-        Embeddings: ${esc(er.embedding_backend)} &middot; ${er.candidates_considered} candidates
-        &middot; match threshold ${er.match_threshold}</div>` : `<div class="empty">No candidates.</div>`;
-  } else if(GRAPH === "network"){
-    $("detailTitle").textContent = "Related parties";
-    $("graphDetail").innerHTML = d.ownership.length ? `<table>
-      <tr><th>Name</th><th>Role</th><th>Relationship</th><th>Source</th><th>Conf.</th></tr>
-      ${d.ownership.map(o=>`<tr>
-        <td>${o.evidence_url?`<a href="${esc(o.evidence_url)}" target="_blank" rel="noopener">${esc(o.name)}</a>`:esc(o.name)}</td>
-        <td class="dim">${esc(o.role)}</td><td class="dim">${esc(o.relationship_type)}</td>
-        <td class="dim">${esc(o.source)}</td><td>${(o.confidence??0).toFixed(2)}</td>
-      </tr>`).join("")}</table>` : `<div class="empty">No related parties found.</div>`;
-  } else {
-    const t = d.transactions;
-    $("detailTitle").textContent = "SEC Form 4 insider transactions";
-    if(!t.available){ $("graphDetail").innerHTML = `<div class="empty">${esc(t.note)}</div>`; return; }
-    const s = t.summary;
-    $("graphDetail").innerHTML = `
-      <div class="tiles" style="margin-bottom:12px">
-        <div class="tile"><div class="k">Transactions</div><div class="v">${s.count}</div>
-          <div class="s">${esc(s.earliest)} to ${esc(s.latest)}</div></div>
+        <td class="dim">${Object.entries(c.confidence_breakdown||{}).map(([k,v])=>`${esc(k)} ${v.toFixed(2)}`).join(" · ")}</td></tr>`).join("")}</table>
+      <div class="dim" style="margin-top:9px;font-size:12px">Embeddings: ${esc(er.embedding_backend)} · ${er.candidates_considered} candidates · threshold ${er.match_threshold}</div>`:`<div class="empty">No candidates.</div>`;
+  }else if(GRAPH==="network"){$("detailTitle").textContent="Related parties";
+    $("graphDetail").innerHTML=d.ownership.length?`<table><tr><th>Name</th><th>Role</th><th>Relationship</th><th>Source</th><th>Conf.</th></tr>
+      ${d.ownership.map(o=>`<tr><td>${esc(o.name)}</td><td class="dim">${esc(o.role)}</td>
+        <td class="dim">${esc(o.relationship_type)}</td><td class="dim">${esc(o.source)}</td><td>${(o.confidence??0).toFixed(2)}</td></tr>`).join("")}</table>`:`<div class="empty">No related parties.</div>`;
+  }else{const t=d.transactions;$("detailTitle").textContent="SEC Form 4 insider transactions";
+    if(!t.available){$("graphDetail").innerHTML=`<div class="empty">${esc(t.note)}</div>`;return;}
+    const s=t.summary;
+    $("graphDetail").innerHTML=`<div class="tiles" style="margin-bottom:12px">
+        <div class="tile"><div class="k">Transactions</div><div class="v">${s.count}</div><div class="s">${esc(s.earliest)} to ${esc(s.latest)}</div></div>
         <div class="tile"><div class="k">Insiders</div><div class="v">${s.insiders}</div></div>
-        <div class="tile"><div class="k">Acquired</div>
-          <div class="v" style="font-size:19px;color:var(--low)">${money(s.acquired_value)}</div>
-          <div class="s">${s.acquired_count} txns</div></div>
-        <div class="tile"><div class="k">Disposed</div>
-          <div class="v" style="font-size:19px;color:var(--high)">${money(s.disposed_value)}</div>
-          <div class="s">${s.disposed_count} txns</div></div>
-      </div>
-      <table>
-        <tr><th>Date</th><th>Insider</th><th>Type</th><th>Direction</th><th>Shares</th><th>Value</th></tr>
-        ${t.records.slice(0,40).map(x=>`<tr>
-          <td class="dim">${esc(x.date)}</td>
+        <div class="tile"><div class="k">Acquired</div><div class="v" style="font-size:18px;color:var(--low)">${money(s.acquired_value)}</div><div class="s">${s.acquired_count} txns</div></div>
+        <div class="tile"><div class="k">Disposed</div><div class="v" style="font-size:18px;color:var(--high)">${money(s.disposed_value)}</div><div class="s">${s.disposed_count} txns</div></div></div>
+      <table><tr><th>Date</th><th>Insider</th><th>Type</th><th>Direction</th><th>Shares</th><th>Value</th></tr>
+        ${t.records.slice(0,40).map(x=>`<tr><td class="dim">${esc(x.date)}</td>
           <td>${x.filing_url?`<a href="${esc(x.filing_url)}" target="_blank" rel="noopener">${esc(x.insider)}</a>`:esc(x.insider)}</td>
-          <td class="dim">${esc(x.code_label)}</td>
-          <td><span class="badge ${x.direction==="acquired"?"low":"high"}">${esc(x.direction)}</span></td>
-          <td>${num(x.shares)}</td><td>${money(x.value)}</td>
-        </tr>`).join("")}
-      </table>
-      <div class="dim" style="margin-top:9px;font-size:12px">
-        Reported securities transactions filed on SEC Form 4 &mdash; actual filings,
-        not inferred payment flows.</div>`;
-  }
+          <td class="dim">${esc(x.code_label)}</td><td><span class="badge ${x.direction==="acquired"?"b-low":"b-high"}">${esc(x.direction)}</span></td>
+          <td>${num(x.shares)}</td><td>${money(x.value)}</td></tr>`).join("")}</table>
+      <div class="dim" style="margin-top:9px;font-size:12px">Reported securities transactions filed on SEC Form 4 — actual filings, not inferred payment flows.</div>`;}
 }
-setType("organization");
+setType("organization");loadSamples();
 </script>
 </body>
 </html>

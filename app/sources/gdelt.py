@@ -13,6 +13,7 @@ import re
 from app.config import settings
 from app.http_client import fetch_json
 from app.resolution.normalize import name_tokens
+from app.risk import bias
 from app.risk.taxonomy import SEARCH_TERMS, categories_for
 
 log = logging.getLogger(__name__)
@@ -105,6 +106,10 @@ async def search(name: str, max_records: int = 75) -> list[dict]:
             continue  # matched the query but carries no taggable risk term
 
         severity = max(c["severity"] for c in categories)
+        # GDELT returns headlines only, not article bodies, so live bias
+        # analysis runs on the title alone - weaker than the demo dataset,
+        # which carries full bodies. The field is always present for a
+        # consistent response shape.
         results.append(
             {
                 "title": title,
@@ -117,6 +122,8 @@ async def search(name: str, max_records: int = 75) -> list[dict]:
                 "severity": round(severity, 2),
                 "categories": categories,
                 "category_keys": [c["key"] for c in categories],
+                "body": None,
+                "bias": bias.analyze(title),
                 "matched_terms": sorted(
                     {t for c in categories for t in c["matched_terms"]}
                 ),

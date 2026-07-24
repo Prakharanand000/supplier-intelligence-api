@@ -2,23 +2,27 @@
 
 from __future__ import annotations
 
+from app.demo import build_investigation, list_subjects
+from app.demo.dataset import ARTICLES, SUBJECTS
 from app.pipeline import _summarize_media
+from app.risk import bias
 from app.sources.gdelt import _MARKET_NOISE
-from app.risk.taxonomy import categories_for, category_labels
+from app.risk.taxonomy import CATEGORY_ORDER, categories_for, category_labels
 from app.sources.ofac import _check_dob, _dob_years
 from app.sources.sec import _parse_form4
 
 
-# --- adverse media tagging -------------------------------------------------
+# --- adverse media tagging (5 top-level categories) ------------------------
 def test_headline_tagged_with_every_matching_category():
     keys = {c["key"] for c in categories_for("Firm sued over bribery and fraud")}
-    assert {"litigation", "bribery_corruption", "financial_crime"} <= keys
+    # "sued" -> legal_reputational; "bribery"/"fraud" -> financial_crime
+    assert {"legal_reputational", "financial_crime"} <= keys
 
 
 def test_categories_are_ordered_most_severe_first():
     tagged = categories_for("Executive indicted after settlement talks collapse")
     assert tagged[0]["severity"] >= tagged[-1]["severity"]
-    assert tagged[0]["key"] == "criminal"
+    assert tagged[0]["key"] == "terrorism_serious_crime"  # "indicted"
 
 
 def test_severity_distinguishes_indictment_from_settlement():
@@ -34,13 +38,101 @@ def test_untagged_headline_returns_nothing():
 
 def test_multiword_terms_match():
     keys = {c["key"] for c in categories_for("Supplier accused of forced labor")}
-    assert "labor_human_rights" in keys
+    assert "terrorism_serious_crime" in keys
 
 
-def test_every_category_has_a_label():
+def test_exactly_five_categories_each_with_a_label_and_color():
     labels = category_labels()
-    for tagged in categories_for("fraud lawsuit breach recall pollution"):
-        assert labels[tagged["key"]] == tagged["label"]
+    assert len(labels) == 5
+    assert [c["key"] for c in labels] == CATEGORY_ORDER
+    for c in labels:
+        assert c["label"] and c["color"].startswith("#")
+
+
+def test_sanctions_and_regulatory_are_distinct_categories():
+    assert categories_for("Entity added to OFAC SDN list")[0]["key"] == "sanctions"
+    assert "regulatory" in {c["key"] for c in categories_for("FINRA censures broker")}
+
+
+# --- media bias / objectivity analysis -------------------------------------
+def test_factual_wire_copy_scores_low():
+    result = bias.analyze(
+        "Regulators fined the company $12 million. It said it strengthened "
+        "controls. No individuals were charged."
+    )
+    assert result["label"] == "Factual"
+    assert result["flagged_count"] == 0
+
+
+def test_loaded_tabloid_copy_scores_polarized():
+    result = bias.analyze(
+        "In a shocking scandal, insiders say the crooked bosses reportedly "
+        "laundered staggering sums. Everyone knows this is the tip of the iceberg."
+    )
+    assert result["label"] == "Polarized"
+    assert result["flagged_count"] >= 2
+
+
+def test_bias_flags_point_at_specific_terms():
+    result = bias.analyze("The firm was obviously reckless and utterly negligent.")
+    flagged = [s for s in result["sentences"] if s["biased"]]
+    assert flagged
+    terms = {t.lower() for s in flagged for r in s["reasons"] for t in r["terms"]}
+    assert {"obviously", "reckless", "utterly"} & terms
+
+
+def test_bias_spans_are_within_sentence_bounds():
+    s = "This is clearly the worst and most shocking outcome imaginable."
+    result = bias.analyze(s)
+    for sent in result["sentences"]:
+        for span in sent["spans"]:
+            assert 0 <= span["start"] < span["end"] <= len(sent["text"])
+
+
+def test_empty_body_is_unrated():
+    assert bias.analyze("")["label"] == "Unrated"
+
+
+# --- demo dataset integrity ------------------------------------------------
+def test_demo_has_between_30_and_40_articles():
+    assert 30 <= len(ARTICLES) <= 40
+
+
+def test_every_demo_article_tags_to_at_least_one_category():
+    for art in ARTICLES:
+        tags = categories_for(f"{art['title']} {art['body']}")
+        assert tags, art["title"]
+
+
+def test_demo_dataset_spans_all_five_categories():
+    seen = set()
+    for art in ARTICLES:
+        for c in categories_for(f"{art['title']} {art['body']}"):
+            seen.add(c["key"])
+    assert set(CATEGORY_ORDER) <= seen
+
+
+def test_demo_dataset_has_factual_and_polarized_articles():
+    labels = {bias.analyze(a["body"])["label"] for a in ARTICLES}
+    assert "Factual" in labels and "Polarized" in labels
+
+
+def test_build_investigation_produces_full_object():
+    for sid in SUBJECTS:
+        inv = build_investigation(sid)
+        assert inv["demo"] is True
+        assert inv["adverse_media"], sid
+        assert "bias" in inv["media_summary"]
+        assert inv["risk"]["level"] in ("low", "medium", "high", "critical")
+        for graph in inv["graph"].values():
+            assert "nodes" in graph and "edges" in graph
+
+
+def test_list_subjects_matches_dataset():
+    subjects = list_subjects()
+    assert {s["id"] for s in subjects} == set(SUBJECTS)
+    for s in subjects:
+        assert s["article_count"] > 0
 
 
 # --- market-wire noise -----------------------------------------------------

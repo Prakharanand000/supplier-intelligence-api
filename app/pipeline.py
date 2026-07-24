@@ -376,6 +376,7 @@ def _summarize_media(media: list[dict]) -> dict[str, Any]:
     """Aggregate adverse media into the counts the dashboard filters on."""
     by_category: dict[str, dict] = {}
     by_month: dict[str, int] = {}
+    bias_counts = {"Factual": 0, "Mixed": 0, "Polarized": 0, "Unrated": 0}
 
     for article in media:
         for category in article.get("categories", []):
@@ -384,6 +385,7 @@ def _summarize_media(media: list[dict]) -> dict[str, Any]:
                 {
                     "key": category["key"],
                     "label": category["label"],
+                    "color": category.get("color"),
                     "count": 0,
                     "peak_severity": 0.0,
                 },
@@ -392,6 +394,8 @@ def _summarize_media(media: list[dict]) -> dict[str, Any]:
             bucket["peak_severity"] = max(
                 bucket["peak_severity"], category["severity"]
             )
+        label = (article.get("bias") or {}).get("label", "Unrated")
+        bias_counts[label] = bias_counts.get(label, 0) + 1
         date = article.get("date")
         if date and len(date) >= 7:
             by_month[date[:7]] = by_month.get(date[:7], 0) + 1
@@ -408,6 +412,17 @@ def _summarize_media(media: list[dict]) -> dict[str, Any]:
         ],
         "peak_severity": max((a["severity"] for a in media), default=0.0),
         "sources": len({a["source"] for a in media}),
+        "bias": {
+            "factual": bias_counts["Factual"],
+            "mixed": bias_counts["Mixed"],
+            "polarized": bias_counts["Polarized"],
+            "unrated": bias_counts["Unrated"],
+            # A high polarized share means the adverse-media signal is soft and
+            # should be discounted, not taken at face value.
+            "polarized_share": round(
+                bias_counts["Polarized"] / len(media), 3
+            ) if media else 0.0,
+        },
     }
 
 

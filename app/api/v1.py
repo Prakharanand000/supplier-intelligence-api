@@ -8,6 +8,7 @@ from fastapi import APIRouter, HTTPException, Query
 from sqlalchemy import func, select
 
 from app import db as database
+from app import demo
 from app.models import Investigation
 from app.pipeline import investigate
 from app.resolution.embeddings import active_backend
@@ -87,8 +88,22 @@ async def refresh_ofac() -> dict:
 
 @router.get("/risk-categories", summary="Adverse-media risk taxonomy")
 async def risk_categories() -> dict:
-    """The tag vocabulary the dashboard filters on."""
+    """The five top-level categories the dashboard filters on."""
     return {"categories": category_labels()}
+
+
+@router.get("/demo/subjects", summary="Demo subjects (offline sample dataset)")
+async def demo_subjects() -> dict:
+    """Fictional subjects with pre-built adverse media, for an instant demo."""
+    return {"subjects": demo.list_subjects()}
+
+
+@router.get("/demo/investigate/{subject_id}", summary="Assemble a demo investigation")
+async def demo_investigate(subject_id: str) -> dict:
+    try:
+        return demo.build_investigation(subject_id)
+    except KeyError:
+        raise HTTPException(status_code=404, detail="unknown demo subject") from None
 
 
 @router.get("/health", summary="Service and dependency status")

@@ -247,19 +247,60 @@ tests/               offline tests for resolution and risk
 
 ## The interface
 
-Three stages, following the workflow an analyst actually uses.
+Three stages, following the workflow an analyst actually uses. Clean, light
+theme with a left-hand filter rail on the dashboard.
 
 **1 &middot; Subject intake.** Organization or individual. Name, aliases, date of
 birth, address, city, country, registration number, website. Only the name is
 required; everything else sharpens entity resolution and suppresses false
-positives.
+positives. A **sample dataset** loads three fictional subjects instantly with no
+live calls (see below).
 
-**2 &middot; Risk dashboard.** KPI tiles, then adverse media tagged against an
-11-category risk taxonomy (Financial Crime, Bribery & Corruption, Sanctions,
-Criminal Proceedings, Litigation, Regulatory, Cyber, Environmental, Labor &
-Human Rights, Product Safety, Governance). Each category is a clickable filter
-chip with its own count, alongside a high-severity toggle and a monthly volume
-timeline. Sanctions, litigation, ownership and the agent report sit below.
+**2 &middot; Risk dashboard.** KPI tiles, a category distribution chart, and adverse
+media tagged against five top-level risk categories:
+
+| Category | Covers |
+| --- | --- |
+| Financial Crime | money laundering, fraud, embezzlement, bribery, insider trading |
+| Legal & Reputational Risk | lawsuits, class actions, misconduct, scandal, cover-ups |
+| FINRA & Regulatory Bodies | FINRA/SEC enforcement, censure, consent orders, penalties |
+| Terrorism & Serious Crime | terrorism financing, trafficking, organised crime, indictments |
+| Sanctions & Watchlists | OFAC/SDN, embargoes, designations, watchlists |
+
+A left filter rail carries the five categories (with counts and colour
+swatches), a media-objectivity filter (Factual / Mixed / Polarized) and a
+severity toggle. All filters compose live.
+
+### Media bias analysis
+
+The dashboard's distinctive feature: every article is scored for **objectivity**,
+so sensationalist coverage can be discounted rather than counted at face value.
+A transparent lexicon-and-rule model flags sentences carrying loaded/emotional
+language, unverified attribution ("sources say", "reportedly"), opinion asserted
+as fact, absolutes, and charged reporting verbs. Each article is labelled
+Factual, Mixed or Polarized, and the bias table highlights the exact words that
+triggered each flag inside the article body. A "show only flagged lines" toggle
+collapses each article down to just its biased sentences. It is a lexicon model,
+not an ML classifier — every flag points at the words that caused it, which is
+what makes it defensible.
+
+### Sample dataset (offline)
+
+Because the live sources are slow (cold-start OFAC download, GDELT rate limits),
+a curated demo dataset lets the whole application run instantly:
+
+- Three **fictional** subjects — Northwind Trading Co., Meridian Capital
+  Partners, Halcyon Logistics Ltd. Real companies are never given fabricated
+  allegations.
+- 35 pre-authored adverse-media articles spanning all five categories, with a
+  deliberate spread of factual, mixed and polarized bias so the objectivity
+  filter has something to separate.
+- Full investigation objects (identity, sanctions, litigation, ownership,
+  Form 4 transactions, graphs) assembled through the **same** taxonomy, bias
+  analyzer and risk engine a live run uses.
+
+`GET /api/v1/demo/subjects` lists them; `GET /api/v1/demo/investigate/{id}`
+returns a complete investigation.
 
 **3 &middot; Network drill-down.** Three force-directed graphs:
 

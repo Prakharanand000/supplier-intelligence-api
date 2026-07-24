@@ -15,6 +15,7 @@ from app.http_client import fetch_json
 from app.resolution.normalize import name_tokens
 from app.risk import bias
 from app.risk.taxonomy import SEARCH_TERMS, categories_for
+from app.risk.term_matcher import match_terms
 
 log = logging.getLogger(__name__)
 
@@ -122,6 +123,7 @@ async def search(name: str, max_records: int = 75) -> list[dict]:
                 "severity": round(severity, 2),
                 "categories": categories,
                 "category_keys": [c["key"] for c in categories],
+                "risk_terms": list(match_terms(title)),
                 "body": None,
                 "bias": bias.analyze(title),
                 "matched_terms": sorted(

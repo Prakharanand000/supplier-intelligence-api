@@ -13,7 +13,8 @@ from typing import Any
 from app.demo.dataset import ARTICLES, GRAPH_EDGES, GRAPH_NODES, SUBJECTS
 from app.risk import bias
 from app.risk.engine import evaluate, recommendation
-from app.risk.taxonomy import categories_for
+from app.risk.taxonomy import RISK_TAXONOMY, categories_for
+from app.risk.term_matcher import match_terms
 
 
 def _slug(label: str) -> str:
@@ -82,7 +83,20 @@ def list_subjects() -> list[dict]:
 def _enrich_articles(sid: str) -> list[dict]:
     out: list[dict] = []
     for i, art in enumerate(a for a in ARTICLES if a["subject"] == sid):
-        categories = categories_for(f"{art['title']} {art['body']}")
+        text = f"{art['title']} {art['body']}"
+        categories = categories_for(text)
+        # Cosine-matched controlled risk terms (for the word cloud + tags).
+        risk_terms = list(match_terms(text))
+        # If the taxonomy lexicon missed it but cosine found risk terms, derive
+        # the category from the strongest matched term so every article is tagged.
+        if not categories and risk_terms:
+            key = risk_terms[0]["category"]
+            spec = RISK_TAXONOMY[key]
+            categories = [{
+                "key": key, "label": spec["label"], "color": spec["color"],
+                "severity": round(risk_terms[0]["score"], 2),
+                "matched_terms": [t["term"] for t in risk_terms[:3]],
+            }]
         severity = max((c["severity"] for c in categories), default=0.4)
         out.append(
             {
@@ -97,7 +111,8 @@ def _enrich_articles(sid: str) -> list[dict]:
                 "confidence": 0.9,
                 "categories": categories,
                 "category_keys": [c["key"] for c in categories],
-                "matched_terms": sorted({t for c in categories for t in c["matched_terms"]}),
+                "risk_terms": risk_terms,
+                "matched_terms": [t["term"] for t in risk_terms[:6]],
                 "body": art["body"],
                 "bias": bias.analyze(art["body"]),
             }
@@ -171,8 +186,10 @@ def _graphs(meta: dict, ownership: list, transactions: dict) -> dict[str, Any]:
                           "type": "parent" if is_parent else "person",
                           "source": o.get("source"), "confidence": o.get("confidence"),
                           "detail": o.get("role")})
+        rel = o.get("role") or o["relationship_type"]
         net_edges.append({"source": nid, "target": "entity", "weight": o.get("confidence", 0.5),
-                          "label": o.get("role") or o["relationship_type"],
+                          "label": rel, "relationship": rel,
+                          "description": f"{o['name']} is linked to {name} as {rel}.",
                           "kind": "ownership" if is_parent else "officer"})
 
     txn_nodes, txn_edges = [], []
@@ -221,6 +238,17 @@ def _evidence(articles: list, litigation: dict, ownership: list, meta: dict) -> 
     for a in articles[:10]:
         add(a["source"], f"{a['title']} [{a['bias']['label']}]", a["url"])
     return ev
+
+
+def _graph_block(meta: dict, ownership: list, transactions: dict) -> dict[str, Any]:
+    """Resolution + transaction graphs always; the rich cross-entity connection
+    network only for the hand-authored subjects that live in the demo graph.
+    Generated entities fall back to their ownership-derived network."""
+    block = _graphs(meta, ownership, transactions)
+    if meta["name"] in GRAPH_NODES:
+        block["network"] = _connection_subgraph(meta["name"])
+        block["network_full"] = _full_graph()
+    return block
 
 
 def build_investigation(sid: str) -> dict[str, Any]:
@@ -325,13 +353,7 @@ def build_investigation(sid: str) -> dict[str, Any]:
         "media_summary": media_summary,
         "litigation": litigation,
         "transactions": transactions,
-        "graph": {
-            **_graphs(meta, ownership, transactions),
-            # Rich multi-hop connection graph replaces the flat ownership star:
-            # persons linking to other firms, firms to parents, cross-entity links.
-            "network": _connection_subgraph(meta["name"]),
-            "network_full": _full_graph(),
-        },
+        "graph": _graph_block(meta, ownership, transactions),
         "risk": risk,
         "evidence": _evidence(articles, litigation, ownership, meta),
         "agent_summary": agent_summary,

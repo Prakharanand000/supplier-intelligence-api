@@ -377,8 +377,17 @@ def _summarize_media(media: list[dict]) -> dict[str, Any]:
     by_category: dict[str, dict] = {}
     by_month: dict[str, int] = {}
     bias_counts = {"Factual": 0, "Mixed": 0, "Polarized": 0, "Unrated": 0}
+    term_freq: dict[str, dict] = {}
 
     for article in media:
+        for term in article.get("risk_terms", []):
+            bucket = term_freq.setdefault(
+                term["term"],
+                {"term": term["term"], "category": term["category"], "count": 0,
+                 "peak_score": 0.0},
+            )
+            bucket["count"] += 1
+            bucket["peak_score"] = max(bucket["peak_score"], term["score"])
         for category in article.get("categories", []):
             bucket = by_category.setdefault(
                 category["key"],
@@ -412,6 +421,11 @@ def _summarize_media(media: list[dict]) -> dict[str, Any]:
         ],
         "peak_severity": max((a["severity"] for a in media), default=0.0),
         "sources": len({a["source"] for a in media}),
+        # Risk-term frequencies for the word cloud, most frequent first.
+        "risk_terms": sorted(
+            term_freq.values(),
+            key=lambda t: (t["count"], t["peak_score"]), reverse=True,
+        ),
         "bias": {
             "factual": bias_counts["Factual"],
             "mixed": bias_counts["Mixed"],

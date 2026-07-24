@@ -350,3 +350,12 @@ SUBJECTS: dict[str, dict] = {
         ],
     },
 }
+
+
+# Merge in the generated watchlist so the demo has ~20 entities in total. The
+# three hand-authored subjects above keep their richer fixtures (cross-entity
+# connection graph, insider transactions); the generated ones add breadth.
+from app.demo.generator import GEN_ARTICLES, GEN_SUBJECTS  # noqa: E402
+
+SUBJECTS.update(GEN_SUBJECTS)
+ARTICLES.extend(GEN_ARTICLES)

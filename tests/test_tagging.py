@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+
 from app.demo import build_investigation, list_subjects
 from app.demo.dataset import ARTICLES, SUBJECTS
 from app.pipeline import _summarize_media
@@ -94,14 +96,25 @@ def test_empty_body_is_unrated():
 
 
 # --- demo dataset integrity ------------------------------------------------
-def test_demo_has_between_30_and_40_articles():
-    assert 30 <= len(ARTICLES) <= 40
+def test_demo_corpus_is_large():
+    # ~20 entities x 10-15 articles
+    assert len(ARTICLES) >= 200
 
 
-def test_every_demo_article_tags_to_at_least_one_category():
-    for art in ARTICLES:
-        tags = categories_for(f"{art['title']} {art['body']}")
-        assert tags, art["title"]
+def test_most_demo_articles_express_a_controlled_risk_term():
+    # Not every article uses compliance vocabulary (tabloid pieces use
+    # colloquial language), but the corpus should be densely matched.
+    from app.risk.term_matcher import match_terms
+    matched = sum(1 for a in ARTICLES if match_terms(f"{a['title']} {a['body']}"))
+    assert matched / len(ARTICLES) >= 0.85
+
+
+def test_every_demo_article_is_category_tagged():
+    # Via the enriched pipeline (taxonomy + cosine fallback), every article
+    # lands in at least one of the five categories.
+    for sid in SUBJECTS:
+        for a in build_investigation(sid)["adverse_media"]:
+            assert a["categories"], a["title"]
 
 
 def test_demo_dataset_spans_all_five_categories():
@@ -165,6 +178,60 @@ def test_full_graph_is_superset_of_subgraph():
     full_ids = {n["id"] for n in g["network_full"]["nodes"]}
     assert sub_ids <= full_ids
     assert len(full_ids) > len(sub_ids)  # room to expand
+
+
+# --- risk vocabulary + cosine term matcher --------------------------------
+def test_vocabulary_every_term_routes_to_one_of_five_categories():
+    from app.risk.taxonomy import CATEGORY_ORDER
+    from app.risk.vocabulary import RISK_TERMS, TERM_CATEGORY
+    assert len(RISK_TERMS) > 200
+    assert set(TERM_CATEGORY.values()) <= set(CATEGORY_ORDER)
+
+
+def test_terrorism_terms_outrank_financial_routing():
+    from app.risk.vocabulary import categorize
+    # "terrorist financing" contains "financing" but must route to terrorism
+    assert categorize("terrorist financing") == "terrorism_serious_crime"
+    assert categorize("money laundering") == "financial_crime"
+    assert categorize("sanctions evasion") == "sanctions"
+
+
+def test_cosine_matcher_finds_variants_and_ignores_neutral():
+    from app.risk.term_matcher import match_terms
+    hits = {m["term"] for m in match_terms("The firm settled bribery and money laundering claims.")}
+    assert "bribery" in hits
+    assert "money laundering" in hits
+    assert match_terms("The company opened a new distribution centre.") == ()
+
+
+def test_cosine_matcher_scores_are_bounded():
+    from app.risk.term_matcher import match_terms
+    for m in match_terms("Executives face securities fraud and insider trading charges."):
+        assert 0.72 <= m["score"] <= 1.0
+        assert m["matched_span"]
+
+
+# --- 20-entity watchlist + word cloud --------------------------------------
+def test_demo_has_at_least_20_entities():
+    assert len(SUBJECTS) >= 20
+
+
+def test_generated_entities_build_and_carry_risk_terms():
+    from app.demo.generator import ENTITY_SPECS
+    for name, *_ in ENTITY_SPECS[:4]:
+        sid = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
+        inv = build_investigation(sid)
+        assert 10 <= inv["media_summary"]["total"] <= 15
+        # word cloud is populated from cosine-matched terms
+        assert inv["media_summary"]["risk_terms"]
+        assert all(0.72 <= t["peak_score"] <= 1.0 for t in inv["media_summary"]["risk_terms"])
+
+
+def test_word_cloud_terms_carry_category_and_count():
+    ms = build_investigation("northwind")["media_summary"]
+    assert ms["risk_terms"]
+    top = ms["risk_terms"][0]
+    assert top["count"] >= 1 and "category" in top and "term" in top
 
 
 def test_connection_insight_fallback_names_both_parties():

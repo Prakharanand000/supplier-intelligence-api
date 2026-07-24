@@ -6,230 +6,676 @@
 <title>Supplier Intelligence API</title>
 <style>
   :root {
-    --bg: #0f1115; --panel: #171a21; --line: #262b36; --ink: #e6e9ef;
-    --muted: #98a1b3; --accent: #6ea8fe;
-    --low: #3fb950; --medium: #d29922; --high: #f85149; --critical: #da3633;
+    --bg:#0d1017; --panel:#151922; --panel2:#1b202b; --line:#252b38;
+    --ink:#e8ebf2; --muted:#8f9bb3; --dim:#6b7689;
+    --accent:#5b9dff; --accent2:#8b6cff;
+    --low:#3fb950; --medium:#d29922; --high:#f0883e; --critical:#f85149;
   }
-  * { box-sizing: border-box; }
-  body {
-    margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.55
-    ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-  }
-  header { padding: 28px 24px 12px; border-bottom: 1px solid var(--line); }
-  h1 { margin: 0 0 4px; font-size: 20px; letter-spacing: -.01em; }
-  h1 span { color: var(--muted); font-weight: 400; }
-  .sub { color: var(--muted); font-size: 13px; }
-  main { max-width: 1080px; margin: 0 auto; padding: 22px 24px 64px; }
-  form { display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 10px; margin-bottom: 14px; }
-  input, button {
-    font: inherit; padding: 10px 12px; border-radius: 8px;
-    border: 1px solid var(--line); background: var(--panel); color: var(--ink);
-  }
-  button { background: var(--accent); color: #06101f; font-weight: 600; cursor: pointer; border: 0; }
-  button:disabled { opacity: .55; cursor: progress; }
-  .examples { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 22px; }
-  .examples button { background: var(--panel); color: var(--muted); font-weight: 400; font-size: 13px; border: 1px solid var(--line); }
-  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; margin-bottom: 14px; }
-  .card h2 { margin: 0 0 10px; font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
-  .row { display: flex; gap: 22px; flex-wrap: wrap; }
-  .score { font-size: 44px; font-weight: 700; line-height: 1; }
-  .badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; }
-  .low { background: rgba(63,185,80,.15); color: var(--low); }
-  .medium { background: rgba(210,153,34,.15); color: var(--medium); }
-  .high { background: rgba(248,81,73,.15); color: var(--high); }
-  .critical { background: rgba(218,54,51,.2); color: var(--critical); }
-  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
-  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
-  th { color: var(--muted); font-weight: 500; }
-  a { color: var(--accent); text-decoration: none; }
-  a:hover { text-decoration: underline; }
-  .bar { height: 6px; background: #21262d; border-radius: 4px; overflow: hidden; min-width: 90px; }
-  .bar i { display: block; height: 100%; background: var(--accent); }
-  .muted { color: var(--muted); }
-  pre { background: #0b0d11; border: 1px solid var(--line); border-radius: 8px; padding: 12px; overflow: auto; max-height: 420px; font-size: 12px; }
-  details summary { cursor: pointer; color: var(--muted); font-size: 13px; }
-  .kv { display: grid; grid-template-columns: 150px 1fr; gap: 4px 14px; font-size: 13.5px; }
-  .kv div:nth-child(odd) { color: var(--muted); }
-  .status { color: var(--muted); font-size: 13px; margin-bottom: 14px; }
-  @media (max-width: 720px) { form { grid-template-columns: 1fr; } }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+       font:14.5px/1.55 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+  a{color:var(--accent);text-decoration:none} a:hover{text-decoration:underline}
+
+  /* ---------- chrome ---------- */
+  header{display:flex;align-items:center;gap:18px;padding:14px 22px;
+         border-bottom:1px solid var(--line);background:var(--panel);
+         position:sticky;top:0;z-index:40}
+  .brand{font-weight:700;letter-spacing:-.01em;font-size:15px;white-space:nowrap}
+  .brand span{color:var(--muted);font-weight:400}
+  .steps{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap}
+  .step{padding:6px 13px;border-radius:7px;font-size:12.5px;color:var(--dim);
+        border:1px solid transparent;cursor:pointer;white-space:nowrap}
+  .step.done{color:var(--muted)}
+  .step.active{background:var(--panel2);border-color:var(--line);color:var(--ink)}
+  .step[disabled]{opacity:.4;cursor:not-allowed}
+
+  main{max-width:1240px;margin:0 auto;padding:22px}
+  .view{display:none} .view.on{display:block}
+  h2{font-size:12px;text-transform:uppercase;letter-spacing:.09em;
+     color:var(--muted);margin:0 0 12px;font-weight:600}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:11px;
+        padding:16px 18px;margin-bottom:14px}
+
+  /* ---------- intake ---------- */
+  .intake{max-width:860px;margin:0 auto}
+  .lede{color:var(--muted);font-size:13.5px;margin:0 0 20px}
+  .seg{display:inline-flex;background:var(--panel2);border:1px solid var(--line);
+       border-radius:8px;padding:3px;margin-bottom:16px}
+  .seg button{background:none;border:0;color:var(--muted);padding:7px 16px;
+              border-radius:6px;cursor:pointer;font:inherit;font-size:13px}
+  .seg button.on{background:var(--accent);color:#06101f;font-weight:600}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+  .grid .full{grid-column:1/-1}
+  label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px}
+  input{width:100%;font:inherit;padding:9px 11px;border-radius:7px;
+        border:1px solid var(--line);background:var(--panel2);color:var(--ink)}
+  input:focus{outline:none;border-color:var(--accent)}
+  .hint{font-size:11.5px;color:var(--dim);margin-top:4px}
+  .actions{display:flex;gap:10px;align-items:center;margin-top:20px;flex-wrap:wrap}
+  button.primary{background:var(--accent);color:#06101f;border:0;font-weight:600;
+                 padding:11px 22px;border-radius:8px;cursor:pointer;font:inherit;font-weight:600}
+  button.primary:disabled{opacity:.5;cursor:progress}
+  button.ghost{background:var(--panel2);border:1px solid var(--line);color:var(--muted);
+               padding:8px 13px;border-radius:7px;cursor:pointer;font:inherit;font-size:12.5px}
+  button.ghost:hover{color:var(--ink)}
+  .status{color:var(--muted);font-size:13px;min-height:20px}
+  .status.err{color:var(--critical)}
+
+  /* ---------- dashboard ---------- */
+  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(178px,1fr));gap:12px;margin-bottom:14px}
+  .tile{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:14px 16px}
+  .tile .k{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+  .tile .v{font-size:27px;font-weight:700;margin-top:5px;line-height:1.1}
+  .tile .s{font-size:12px;color:var(--dim);margin-top:3px}
+  .badge{display:inline-block;padding:3px 10px;border-radius:999px;font-size:11.5px;font-weight:600}
+  .low{background:rgba(63,185,80,.15);color:var(--low)}
+  .medium{background:rgba(210,153,34,.15);color:var(--medium)}
+  .high{background:rgba(240,136,62,.15);color:var(--high)}
+  .critical{background:rgba(248,81,73,.18);color:var(--critical)}
+  .neutral{background:var(--panel2);color:var(--muted)}
+
+  .chips{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:6px}
+  .chip{border:1px solid var(--line);background:var(--panel2);color:var(--muted);
+        padding:5px 11px;border-radius:999px;font-size:12px;cursor:pointer;
+        display:inline-flex;align-items:center;gap:7px;font-family:inherit}
+  .chip:hover{color:var(--ink)}
+  .chip.on{background:var(--accent);border-color:var(--accent);color:#06101f;font-weight:600}
+  .chip .n{opacity:.75;font-size:11px}
+
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th,td{text-align:left;padding:8px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--muted);font-weight:500;font-size:12px}
+  tr.clickable{cursor:pointer} tr.clickable:hover td{background:var(--panel2)}
+  .sev{display:inline-block;width:34px;height:5px;border-radius:3px;background:#222836}
+  .sev i{display:block;height:100%;border-radius:3px;background:var(--high)}
+  .tags{display:flex;gap:4px;flex-wrap:wrap}
+  .tag{font-size:10.5px;padding:2px 7px;border-radius:4px;background:var(--panel2);
+       color:var(--muted);border:1px solid var(--line)}
+  .spark{display:flex;align-items:flex-end;gap:3px;height:44px;margin-top:8px}
+  .spark div{flex:1;background:var(--accent);opacity:.65;border-radius:2px 2px 0 0;min-height:2px}
+  .spark div:hover{opacity:1}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .muted{color:var(--muted)} .dim{color:var(--dim)}
+
+  /* ---------- graph ---------- */
+  .tabs{display:flex;gap:7px;margin-bottom:14px;flex-wrap:wrap}
+  .tab{padding:8px 15px;border-radius:8px;border:1px solid var(--line);
+       background:var(--panel);color:var(--muted);cursor:pointer;font:inherit;font-size:13px}
+  .tab.on{background:var(--accent);border-color:var(--accent);color:#06101f;font-weight:600}
+  .graphwrap{display:grid;grid-template-columns:1fr 300px;gap:14px}
+  .canvas{background:var(--panel);border:1px solid var(--line);border-radius:11px;
+          overflow:hidden;position:relative;min-height:520px}
+  svg{display:block;width:100%;height:520px;cursor:grab}
+  svg:active{cursor:grabbing}
+  .legend{position:absolute;left:12px;bottom:12px;display:flex;gap:12px;
+          background:rgba(13,16,23,.85);padding:7px 11px;border-radius:8px;
+          border:1px solid var(--line);font-size:11.5px;color:var(--muted);flex-wrap:wrap}
+  .legend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px}
+  .node{cursor:pointer}
+  .node text{font-size:11px;fill:var(--ink);pointer-events:none}
+  .edge{stroke:#39415380;stroke-width:1.4}
+  .edge.sel{stroke:var(--accent);stroke-width:2.4}
+  .side{background:var(--panel);border:1px solid var(--line);border-radius:11px;
+        padding:15px;max-height:520px;overflow:auto}
+  .kv{display:grid;grid-template-columns:104px 1fr;gap:5px 11px;font-size:12.5px}
+  .kv div:nth-child(odd){color:var(--muted)}
+  .bar{height:5px;background:#222836;border-radius:3px;overflow:hidden;margin-top:3px}
+  .bar i{display:block;height:100%;background:var(--accent)}
+  pre{background:#090b0f;border:1px solid var(--line);border-radius:8px;padding:12px;
+      overflow:auto;max-height:400px;font-size:11.5px}
+  details summary{cursor:pointer;color:var(--muted);font-size:13px}
+  .empty{color:var(--dim);font-size:13px;padding:14px 0}
+  @media(max-width:860px){.grid,.two,.graphwrap{grid-template-columns:1fr}
+    svg{height:400px}.side{max-height:none}}
 </style>
 </head>
 <body>
 <header>
-  <h1>Supplier Intelligence API <span>/ third party risk investigation layer</span></h1>
-  <div class="sub">OFAC &middot; SEC EDGAR &middot; GLEIF &middot; GDELT &middot; CourtListener &rarr; entity resolution &rarr; evidence &rarr; risk &rarr; Claude</div>
+  <div class="brand">Supplier Intelligence <span>/ risk investigation</span></div>
+  <nav class="steps">
+    <button class="step active" id="s1" onclick="go(1)">1 &middot; Subject intake</button>
+    <button class="step" id="s2" onclick="go(2)" disabled>2 &middot; Risk dashboard</button>
+    <button class="step" id="s3" onclick="go(3)" disabled>3 &middot; Network drill-down</button>
+  </nav>
 </header>
 
 <main>
-  <form id="f">
-    <input id="name" placeholder="Company name" required />
-    <input id="country" placeholder="Country (optional)" />
-    <input id="website" placeholder="Website (optional)" />
-    <button id="go" type="submit">Investigate</button>
-  </form>
+  <!-- ============ 1. INTAKE ============ -->
+  <section class="view on" id="view1">
+    <div class="intake">
+      <div class="card">
+        <h2>Subject details</h2>
+        <p class="lede">Screened live against OFAC SDN, SEC EDGAR, GLEIF, GDELT and
+          CourtListener. Only the name is required &mdash; every other field
+          sharpens entity resolution and reduces false positives.</p>
 
-  <div class="examples">
-    <button data-n="Kesko Oyj" data-c="Finland" data-w="https://www.kesko.fi">Demo 1 &middot; clean</button>
-    <button data-n="Wells Fargo &amp; Company" data-c="United States">Demo 2 &middot; risk positive</button>
-    <button data-n="ABC Manufacturing" data-c="United States">Demo 3 &middot; entity resolution</button>
-  </div>
+        <div class="seg">
+          <button id="tOrg" class="on" onclick="setType('organization')">Organization</button>
+          <button id="tInd" onclick="setType('individual')">Individual</button>
+        </div>
 
-  <div class="status" id="status"></div>
-  <div id="out"></div>
+        <div class="grid">
+          <div class="full">
+            <label id="lblName">Legal name <span class="dim">(required)</span></label>
+            <input id="f_name" placeholder="ABC Manufacturing Ltd" />
+          </div>
+          <div class="full">
+            <label>Known aliases / trading names</label>
+            <input id="f_aliases" placeholder="ABC Mfg, ABC Manufacturing Group" />
+            <div class="hint">Comma separated. Matched against every registry alias.</div>
+          </div>
+          <div id="wrapDob" style="display:none">
+            <label>Date of birth</label>
+            <input id="f_dob" placeholder="1963-02-05" />
+            <div class="hint">Used to confirm or rule out an OFAC name hit.</div>
+          </div>
+          <div id="wrapReg">
+            <label>Registration / ID number</label>
+            <input id="f_reg" placeholder="Company number, LEI or national ID" />
+          </div>
+          <div>
+            <label>Country</label>
+            <input id="f_country" placeholder="United States" />
+          </div>
+          <div>
+            <label>City</label>
+            <input id="f_city" placeholder="Cupertino" />
+          </div>
+          <div class="full">
+            <label>Street address</label>
+            <input id="f_address" placeholder="One Apple Park Way" />
+          </div>
+          <div class="full">
+            <label>Website or email domain</label>
+            <input id="f_website" placeholder="https://example.com" />
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="primary" id="run" onclick="runInvestigation()">Run investigation</button>
+          <span class="status" id="status"></span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Sample subjects</h2>
+        <div class="chips">
+          <button class="chip" onclick="preset('clean')">Clean &mdash; Kesko Oyj</button>
+          <button class="chip" onclick="preset('risk')">Risk positive &mdash; Wells Fargo</button>
+          <button class="chip" onclick="preset('ambig')">Ambiguous &mdash; ABC Manufacturing</button>
+          <button class="chip" onclick="preset('person')">Individual &mdash; sanctions hit + DOB namesake check</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 2. DASHBOARD ============ -->
+  <section class="view" id="view2">
+    <div class="tiles" id="tiles"></div>
+    <div class="card">
+      <h2>Adverse media &middot; risk tagging</h2>
+      <div class="chips" id="mediaFilters"></div>
+      <div class="chips" style="margin-top:2px">
+        <button class="chip" id="sevFilter" onclick="toggleSevere()">High severity only</button>
+        <span class="dim" style="font-size:12px;align-self:center" id="mediaCount"></span>
+      </div>
+      <div id="timeline"></div>
+      <div id="mediaTable"></div>
+    </div>
+    <div class="two">
+      <div class="card"><h2>Sanctions &middot; OFAC</h2><div id="sanctions"></div></div>
+      <div class="card"><h2>Risk contributions</h2><div id="contribs"></div></div>
+    </div>
+    <div class="two">
+      <div class="card"><h2>Litigation</h2><div id="litigation"></div></div>
+      <div class="card"><h2>Ownership &amp; officers</h2><div id="ownership"></div></div>
+    </div>
+    <div class="card"><h2>Agent report</h2><div id="report"></div></div>
+    <div class="actions" style="margin-bottom:24px">
+      <button class="primary" onclick="go(3)">Drill down to networks &rarr;</button>
+      <button class="ghost" onclick="go(1)">New investigation</button>
+    </div>
+  </section>
+
+  <!-- ============ 3. GRAPHS ============ -->
+  <section class="view" id="view3">
+    <div class="tabs">
+      <button class="tab on" id="gt0" onclick="setGraph('resolution')">Entity resolution</button>
+      <button class="tab" id="gt1" onclick="setGraph('network')">Ownership network</button>
+      <button class="tab" id="gt2" onclick="setGraph('transactions')">Transaction network</button>
+    </div>
+    <div class="graphwrap">
+      <div class="canvas">
+        <svg id="svg" viewBox="0 0 900 520" preserveAspectRatio="xMidYMid meet"></svg>
+        <div class="legend" id="legend"></div>
+      </div>
+      <div class="side" id="side"><div class="empty">Select a node to inspect it.</div></div>
+    </div>
+    <div class="card" style="margin-top:14px"><h2 id="detailTitle">Detail</h2>
+      <div id="graphDetail"></div></div>
+    <div class="actions" style="margin-bottom:24px">
+      <button class="ghost" onclick="go(2)">&larr; Back to dashboard</button>
+      <button class="ghost" onclick="go(1)">New investigation</button>
+    </div>
+    <details class="card"><summary>Raw intelligence object (JSON)</summary>
+      <pre id="raw"></pre></details>
+  </section>
 </main>
 
 <script>
-const $ = (id) => document.getElementById(id);
-const esc = (s) => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c =>
+  ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const num = n => n == null ? "-" : n.toLocaleString(undefined,{maximumFractionDigits:0});
+const money = n => n == null ? "-" : "$" + n.toLocaleString(undefined,{maximumFractionDigits:0});
 
-document.querySelectorAll(".examples button").forEach(b => {
-  b.onclick = () => {
-    $("name").value = b.dataset.n;
-    $("country").value = b.dataset.c || "";
-    $("website").value = b.dataset.w || "";
-    $("f").requestSubmit();
-  };
-});
+let DATA = null, TYPE = "organization", GRAPH = "resolution";
+let FILTERS = new Set(), SEVERE_ONLY = false, SELECTED = null;
 
-$("f").onsubmit = async (e) => {
-  e.preventDefault();
-  $("go").disabled = true;
-  $("out").innerHTML = "";
-  $("status").textContent = "Investigating - querying live sources...";
+/* ---------------- intake ---------------- */
+function setType(t){
+  TYPE = t;
+  $("tOrg").classList.toggle("on", t==="organization");
+  $("tInd").classList.toggle("on", t==="individual");
+  $("wrapDob").style.display = t==="individual" ? "" : "none";
+  $("lblName").innerHTML = t==="individual"
+    ? 'Full name <span class="dim">(required)</span>'
+    : 'Legal name <span class="dim">(required)</span>';
+  $("f_name").placeholder = t==="individual" ? "Jane Q Smith" : "ABC Manufacturing Ltd";
+}
+const PRESETS = {
+  clean:{name:"Kesko Oyj",country:"Finland",website:"https://www.kesko.fi",type:"organization"},
+  risk:{name:"Wells Fargo & Company",country:"United States",type:"organization"},
+  ambig:{name:"ABC Manufacturing",country:"United States",type:"organization"},
+  // Real SDN entry. Screened with a deliberately wrong DOB to show the
+  // namesake check demoting a name hit instead of blindly confirming it.
+  person:{name:"Hasan Nasrallah",dob:"1994",type:"individual"},
+};
+function preset(k){
+  const p = PRESETS[k];
+  setType(p.type);
+  $("f_name").value = p.name; $("f_country").value = p.country || "";
+  $("f_website").value = p.website || ""; $("f_dob").value = p.dob || "";
+  $("f_city").value=""; $("f_address").value=""; $("f_aliases").value=""; $("f_reg").value="";
+  runInvestigation();
+}
+
+function go(step){
+  if(step>1 && !DATA) return;
+  [1,2,3].forEach(i=>{
+    $("view"+i).classList.toggle("on", i===step);
+    $("s"+i).classList.toggle("active", i===step);
+    $("s"+i).classList.toggle("done", i<step);
+  });
+  if(step===3) drawGraph();
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+async function runInvestigation(){
+  const name = $("f_name").value.trim();
+  if(!name){ $("status").textContent = "Enter a name to screen."; return; }
+  $("run").disabled = true;
+  $("status").className = "status";
+  $("status").textContent = "Querying OFAC, SEC EDGAR, GLEIF, GDELT and CourtListener...";
   const t0 = performance.now();
-  try {
-    const res = await fetch("/api/v1/supplier/investigate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+  try{
+    const res = await fetch("/api/v1/supplier/investigate",{
+      method:"POST", headers:{"Content-Type":"application/json"},
       body: JSON.stringify({
-        name: $("name").value,
-        country: $("country").value || null,
-        website: $("website").value || null,
-      }),
+        name, entity_type: TYPE,
+        country: $("f_country").value.trim() || null,
+        city: $("f_city").value.trim() || null,
+        address: $("f_address").value.trim() || null,
+        website: $("f_website").value.trim() || null,
+        date_of_birth: TYPE==="individual" ? ($("f_dob").value.trim()||null) : null,
+        registration_number: $("f_reg").value.trim() || null,
+        aliases: $("f_aliases").value.split(",").map(s=>s.trim()).filter(Boolean),
+      })
     });
-    if (!res.ok) throw new Error((await res.json()).detail || res.statusText);
-    const data = await res.json();
+    if(!res.ok) throw new Error((await res.json().catch(()=>({}))).detail || res.statusText);
+    DATA = await res.json();
+    FILTERS.clear(); SEVERE_ONLY = false; SELECTED = null;
+    $("s2").disabled = false; $("s3").disabled = false;
     $("status").textContent =
-      `Completed in ${data.duration_seconds}s (round trip ${((performance.now()-t0)/1000).toFixed(1)}s)`;
-    render(data);
-  } catch (err) {
-    $("status").textContent = "Failed: " + err.message;
-  } finally {
-    $("go").disabled = false;
+      `Completed in ${DATA.duration_seconds}s (round trip ${((performance.now()-t0)/1000).toFixed(1)}s)`;
+    renderDashboard();
+    go(2);
+  }catch(e){
+    $("status").className = "status err";
+    $("status").textContent = "Failed: " + e.message;
+  }finally{ $("run").disabled = false; }
+}
+
+/* ---------------- dashboard ---------------- */
+function renderDashboard(){
+  const d = DATA, s = d.supplier, r = d.risk, ms = d.media_summary, t = d.transactions;
+
+  $("tiles").innerHTML = `
+    <div class="tile"><div class="k">Risk score</div>
+      <div class="v" style="color:var(--${r.level})">${r.score}</div>
+      <div class="s"><span class="badge ${r.level}">${r.level.toUpperCase()}</span></div></div>
+    <div class="tile"><div class="k">Resolved identity</div>
+      <div class="v" style="font-size:16px;margin-top:9px">${esc(s.name)}</div>
+      <div class="s">${esc(s.status)} &middot; confidence ${s.identity_confidence.toFixed(2)}</div></div>
+    <div class="tile"><div class="k">Sanctions</div>
+      <div class="v" style="font-size:19px;margin-top:8px;color:var(--${d.sanctions.match?"critical":"low"})">
+        ${d.sanctions.match ? "MATCH" : "No match"}</div>
+      <div class="s">${num(d.sanctions.list_size)} SDN names screened</div></div>
+    <div class="tile"><div class="k">Adverse media</div>
+      <div class="v">${ms.total}</div>
+      <div class="s">${ms.categories.length} risk categor${ms.categories.length===1?"y":"ies"}</div></div>
+    <div class="tile"><div class="k">Litigation</div>
+      <div class="v">${(d.litigation.cases||[]).length}</div>
+      <div class="s">${d.litigation.available ? "federal dockets" : "source unavailable"}</div></div>
+    <div class="tile"><div class="k">Insider transactions</div>
+      <div class="v">${t.available ? t.summary.count : 0}</div>
+      <div class="s">${t.available ? t.summary.insiders + " insiders" : "none filed"}</div></div>`;
+
+  // risk category filter chips
+  $("mediaFilters").innerHTML = ms.categories.length
+    ? ms.categories.map(c=>`<button class="chip" data-cat="${esc(c.key)}"
+         onclick="toggleFilter('${esc(c.key)}')">${esc(c.label)}
+         <span class="n">${c.count}</span></button>`).join("")
+    : `<span class="dim" style="font-size:12.5px">No adverse media matched.</span>`;
+
+  // timeline
+  const tl = ms.timeline || [];
+  $("timeline").innerHTML = tl.length > 1 ? `
+    <div class="spark">${(()=>{const mx=Math.max(...tl.map(x=>x.count));
+      return tl.map(x=>`<div style="height:${Math.round(x.count/mx*100)}%"
+        title="${esc(x.month)}: ${x.count}"></div>`).join("")})()}</div>
+    <div class="dim" style="font-size:11px;display:flex;justify-content:space-between;margin-top:3px">
+      <span>${esc(tl[0].month)}</span><span>${esc(tl[tl.length-1].month)}</span></div>` : "";
+
+  renderMedia();
+
+  // sanctions
+  const sc = d.sanctions;
+  $("sanctions").innerHTML = sc.match ? `
+    <div><span class="badge critical">${esc(sc.match_strength||"match").toUpperCase()}</span>
+      <b style="margin-left:8px">${esc(sc.matched_entity?.name)}</b></div>
+    <div class="kv" style="margin-top:11px">
+      <div>Program</div><div>${esc(sc.matched_entity?.program||"-")}</div>
+      <div>Type</div><div>${esc(sc.matched_entity?.entity_type||"-")}</div>
+      <div>Name similarity</div><div>${sc.confidence}</div>
+      ${sc.dob_check?`<div>DOB check</div><div><span class="badge ${
+        sc.dob_check.status==="match"?"critical":sc.dob_check.status==="conflict"?"low":"neutral"
+      }">${esc(sc.dob_check.status)}</span> <span class="dim">${esc(sc.dob_check.note)}</span></div>`:""}
+      ${sc.matched_entity?.remarks?`<div>Remarks</div><div class="dim">${esc(sc.matched_entity.remarks).slice(0,260)}</div>`:""}
+    </div>` : `
+    <div><span class="badge low">NO MATCH</span>
+      <span class="dim" style="margin-left:8px">screened against ${num(sc.list_size)} SDN names</span></div>
+    ${sc.closest_entry?`<div class="dim" style="margin-top:9px;font-size:12.5px">
+      Closest entry: ${esc(sc.closest_entry.name)} (similarity ${sc.closest_entry.similarity})</div>`:""}`;
+
+  $("contribs").innerHTML = r.contributions.length ? `<table>
+    <tr><th>Signal</th><th>Points</th><th>Source</th></tr>
+    ${r.contributions.map(c=>`<tr><td>${esc(c.category.replace(/_/g," "))}</td>
+      <td>+${c.points}</td><td class="dim">${esc(c.source)}</td></tr>`).join("")}
+    </table>` : `<div class="empty">No risk signals fired.</div>`;
+
+  const cases = d.litigation.cases||[];
+  $("litigation").innerHTML = cases.length ? `<table>
+    <tr><th>Case</th><th>Court</th><th>Filed</th></tr>
+    ${cases.slice(0,10).map(c=>`<tr><td>${c.url?`<a href="${esc(c.url)}" target="_blank" rel="noopener">${esc(c.case)}</a>`:esc(c.case)}</td>
+      <td class="dim">${esc(c.court)}</td><td class="dim">${esc(c.date)}</td></tr>`).join("")}
+    </table>` : `<div class="empty">${esc(d.litigation.note||"No matching dockets.")}</div>`;
+
+  $("ownership").innerHTML = d.ownership.length ? `<table>
+    <tr><th>Name</th><th>Role</th><th>Conf.</th></tr>
+    ${d.ownership.slice(0,12).map(o=>`<tr><td>${esc(o.name)}</td>
+      <td class="dim">${esc(o.role)}</td><td>${(o.confidence??0).toFixed(2)}</td></tr>`).join("")}
+    </table>` : `<div class="empty">No ownership or officer records found.</div>`;
+
+  const a = d.agent_summary;
+  $("report").innerHTML = `
+    <div class="dim" style="font-size:11.5px;margin-bottom:8px">${esc(a.generated_by||"")}</div>
+    <p style="margin:0 0 12px">${esc(a.summary)}</p>
+    <div class="kv">
+      <div>Identity</div><div>${esc(a.identity_assessment)}</div>
+      <div>Ownership</div><div>${esc(a.ownership_assessment)}</div>
+      <div>Sanctions</div><div>${esc(a.sanctions_assessment)}</div>
+      <div>Litigation</div><div>${esc(a.litigation_assessment)}</div>
+      <div>Adverse media</div><div>${esc(a.adverse_media_assessment)}</div>
+      <div>Recommendation</div><div><b>${esc(a.recommendation)}</b></div>
+    </div>`;
+
+  $("raw").textContent = JSON.stringify(d, null, 2);
+}
+
+function toggleFilter(key){
+  FILTERS.has(key) ? FILTERS.delete(key) : FILTERS.add(key);
+  document.querySelectorAll("#mediaFilters .chip").forEach(c=>
+    c.classList.toggle("on", FILTERS.has(c.dataset.cat)));
+  renderMedia();
+}
+function toggleSevere(){
+  SEVERE_ONLY = !SEVERE_ONLY;
+  $("sevFilter").classList.toggle("on", SEVERE_ONLY);
+  renderMedia();
+}
+function filteredMedia(){
+  return (DATA.adverse_media||[]).filter(a=>{
+    if(SEVERE_ONLY && a.severity < 0.8) return false;
+    if(FILTERS.size===0) return true;
+    return (a.category_keys||[]).some(k=>FILTERS.has(k));
+  });
+}
+function renderMedia(){
+  const rows = filteredMedia();
+  $("mediaCount").textContent =
+    `${rows.length} of ${(DATA.adverse_media||[]).length} articles`;
+  $("mediaTable").innerHTML = rows.length ? `<table style="margin-top:10px">
+    <tr><th>Headline</th><th>Source</th><th>Date</th><th>Risk tags</th><th>Sev.</th></tr>
+    ${rows.map(a=>`<tr>
+      <td>${a.url?`<a href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.title)}</a>`:esc(a.title)}</td>
+      <td class="dim">${esc(a.source)}</td><td class="dim">${esc(a.date)}</td>
+      <td><div class="tags">${(a.categories||[]).map(c=>`<span class="tag">${esc(c.label)}</span>`).join("")}</div></td>
+      <td><span class="sev"><i style="width:${Math.round(a.severity*100)}%"></i></span></td>
+    </tr>`).join("")}</table>`
+    : `<div class="empty">No articles match the selected filters.</div>`;
+}
+
+/* ---------------- graphs ---------------- */
+function setGraph(kind){
+  GRAPH = kind; SELECTED = null;
+  ["resolution","network","transactions"].forEach((k,i)=>
+    $("gt"+i).classList.toggle("on", k===kind));
+  drawGraph();
+}
+
+/* Small force-directed layout: repulsion between all nodes, spring along
+   edges, gravity to centre. Deterministic seeding so re-renders are stable. */
+function layout(nodes, edges, W, H){
+  const n = nodes.length;
+  if(!n) return;
+  nodes.forEach((nd,i)=>{
+    const ang = (i/n)*Math.PI*2, rad = i===0 ? 0 : Math.min(W,H)*0.32;
+    nd.x = W/2 + Math.cos(ang)*rad; nd.y = H/2 + Math.sin(ang)*rad;
+    nd.vx = 0; nd.vy = 0;
+  });
+  const idx = Object.fromEntries(nodes.map((d,i)=>[d.id,i]));
+  for(let step=0; step<320; step++){
+    for(let i=0;i<n;i++) for(let j=i+1;j<n;j++){
+      const a=nodes[i], b=nodes[j];
+      let dx=b.x-a.x, dy=b.y-a.y, d2=dx*dx+dy*dy || 0.01;
+      const f = 17000/d2, d=Math.sqrt(d2);
+      const fx=f*dx/d, fy=f*dy/d;
+      a.vx-=fx; a.vy-=fy; b.vx+=fx; b.vy+=fy;
+    }
+    edges.forEach(e=>{
+      const a=nodes[idx[e.source]], b=nodes[idx[e.target]];
+      if(!a||!b) return;
+      const dx=b.x-a.x, dy=b.y-a.y, d=Math.sqrt(dx*dx+dy*dy)||0.01;
+      const target = 185 - 62*(e.weight||0.5);
+      const f = (d-target)*0.035;
+      const fx=f*dx/d, fy=f*dy/d;
+      a.vx+=fx; a.vy+=fy; b.vx-=fx; b.vy-=fy;
+    });
+    nodes.forEach((nd,i)=>{
+      nd.vx += (W/2-nd.x)*(i===0?0.06:0.005);
+      nd.vy += (H/2-nd.y)*(i===0?0.06:0.007);
+      nd.x += Math.max(-16,Math.min(16,nd.vx)); nd.y += Math.max(-16,Math.min(16,nd.vy));
+      nd.vx*=0.82; nd.vy*=0.82;
+      nd.x=Math.max(60,Math.min(W-60,nd.x)); nd.y=Math.max(34,Math.min(H-26,nd.y));
+    });
   }
+}
+
+const NODE_STYLE = {
+  query:{c:"#5b9dff", r:16}, selected:{c:"#3fb950", r:15}, match:{c:"#8b6cff", r:12},
+  rejected:{c:"#5b6478", r:9}, entity:{c:"#5b9dff", r:17}, person:{c:"#d29922", r:11},
+  parent:{c:"#8b6cff", r:13},
+};
+const LEGENDS = {
+  resolution:[["query","Search subject"],["selected","Selected identity"],
+              ["match","Above threshold"],["rejected","Rejected"]],
+  network:[["entity","Resolved entity"],["person","Officer / director"],["parent","Corporate parent"]],
+  transactions:[["entity","Issuer"],["person","Insider (Form 4 filer)"]],
 };
 
-function render(d) {
-  const s = d.supplier, r = d.risk, er = d.entity_resolution, a = d.agent_summary;
-  const pct = (v) => `<div class="bar"><i style="width:${Math.round(v*100)}%"></i></div>`;
+function drawGraph(){
+  if(!DATA) return;
+  const g = DATA.graph[GRAPH] || {nodes:[],edges:[]};
+  const svg = $("svg"), W=900, H=520;
+  const nodes = g.nodes.map(n=>({...n})), edges = g.edges;
 
-  const breakdown = er.selected
-    ? Object.entries(er.selected.confidence_breakdown).map(([k, v]) =>
-        `<tr><td>${esc(k)}</td><td>${v.toFixed(2)}</td><td>${pct(v)}</td>
-         <td class="muted">weight ${er.selected.weights_used[k] ?? "-"}</td></tr>`).join("")
-    : `<tr><td colspan="4" class="muted">No candidate records matched.</td></tr>`;
+  $("legend").innerHTML = (LEGENDS[GRAPH]||[]).map(([k,label])=>
+    `<span><i style="background:${NODE_STYLE[k].c}"></i>${esc(label)}</span>`).join("");
 
-  const alts = er.alternatives.map(x =>
-    `<tr><td>${esc(x.name)}</td><td class="muted">${esc(x.source)}</td>
-     <td>${x.confidence.toFixed(2)}</td><td>${pct(x.confidence)}</td></tr>`).join("")
-    || `<tr><td colspan="4" class="muted">None</td></tr>`;
+  if(!nodes.length){
+    svg.innerHTML = `<text x="${W/2}" y="${H/2}" text-anchor="middle" fill="#6b7689"
+      font-size="13">${GRAPH==="transactions"
+        ? esc(DATA.transactions.note || "No transaction data for this entity.")
+        : "No graph data."}</text>`;
+    $("side").innerHTML = `<div class="empty">Nothing to inspect.</div>`;
+    renderGraphDetail();
+    return;
+  }
 
-  const own = d.ownership.map(o =>
-    `<tr><td>${esc(o.name)}</td><td>${esc(o.role)}</td><td class="muted">${esc(o.source)}</td>
-     <td>${(o.confidence ?? 0).toFixed(2)}</td></tr>`).join("")
-    || `<tr><td colspan="4" class="muted">No ownership or officer records found.</td></tr>`;
+  layout(nodes, edges, W, H);
+  const pos = Object.fromEntries(nodes.map(n=>[n.id,n]));
 
-  const media = d.adverse_media.map(m =>
-    `<tr><td>${m.url ? `<a href="${esc(m.url)}" target="_blank" rel="noopener">${esc(m.title)}</a>` : esc(m.title)}</td>
-     <td class="muted">${esc(m.source)}</td><td class="muted">${esc(m.date)}</td>
-     <td><span class="badge high">${esc(m.sentiment)}</span></td><td>${m.severity}</td></tr>`).join("")
-    || `<tr><td colspan="5" class="muted">No negative coverage matched.</td></tr>`;
+  const edgeSvg = edges.map((e,i)=>{
+    const a=pos[e.source], b=pos[e.target];
+    if(!a||!b) return "";
+    const w = 1 + (e.weight||0.3)*2.6;
+    const col = e.kind==="transaction"
+      ? (e.direction==="acquired" ? "#3fb95099" : "#f0883e99") : "#39415380";
+    return `<line class="edge" data-edge="${i}" x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}"
+      stroke="${col}" stroke-width="${w}"/>`;
+  }).join("");
 
-  const cases = (d.litigation.cases || []).map(c =>
-    `<tr><td>${c.url ? `<a href="${esc(c.url)}" target="_blank" rel="noopener">${esc(c.case)}</a>` : esc(c.case)}</td>
-     <td class="muted">${esc(c.court)}</td><td class="muted">${esc(c.date)}</td></tr>`).join("")
-    || `<tr><td colspan="3" class="muted">${esc(d.litigation.note || "No matching dockets.")}</td></tr>`;
+  const nodeSvg = nodes.map(n=>{
+    const st = NODE_STYLE[n.type] || {c:"#5b6478", r:10};
+    const label = n.label.length>26 ? n.label.slice(0,25)+"…" : n.label;
+    return `<g class="node" data-id="${esc(n.id)}" onclick="selectNode('${esc(n.id)}')">
+      <circle cx="${n.x}" cy="${n.y}" r="${st.r}" fill="${st.c}"
+        stroke="${SELECTED===n.id?"#fff":"#0d1017"}" stroke-width="${SELECTED===n.id?2.5:2}"/>
+      <text x="${n.x}" y="${n.y + st.r + 13}" text-anchor="middle">${esc(label)}</text>
+    </g>`;
+  }).join("");
 
-  const contrib = r.contributions.map(c =>
-    `<tr><td>${esc(c.category)}</td><td>+${c.points}</td><td class="muted">${esc(c.source)}</td></tr>`).join("")
-    || `<tr><td colspan="3" class="muted">No risk signals fired.</td></tr>`;
-
-  const ev = d.evidence.map(e =>
-    `<tr><td class="muted">${esc(e.id)}</td><td class="muted">${esc(e.source)}</td>
-     <td>${e.url ? `<a href="${esc(e.url)}" target="_blank" rel="noopener">${esc(e.description)}</a>` : esc(e.description)}</td></tr>`).join("");
-
-  $("out").innerHTML = `
-    <div class="card">
-      <h2>Risk</h2>
-      <div class="row" style="align-items:center">
-        <div><div class="score">${r.score}</div><div class="muted">of 100</div></div>
-        <div>
-          <span class="badge ${r.level}">${r.level.toUpperCase()}</span>
-          <div style="margin-top:8px;max-width:620px">${esc(a.recommendation)}</div>
-        </div>
-      </div>
-      <table style="margin-top:14px"><tr><th>Signal</th><th>Points</th><th>Source</th></tr>${contrib}</table>
-    </div>
-
-    <div class="card">
-      <h2>Supplier identity</h2>
-      <div class="kv">
-        <div>Resolved name</div><div>${esc(s.name)}</div>
-        <div>Status</div><div><span class="badge ${s.verified ? "low" : "medium"}">${esc(s.status)}</span>
-          &nbsp;confidence ${s.identity_confidence.toFixed(2)}</div>
-        <div>Country</div><div>${esc(s.country || "-")}</div>
-        <div>LEI</div><div>${esc(s.lei || "-")}</div>
-        <div>SEC CIK</div><div>${esc(s.cik || "-")}</div>
-        <div>Aliases</div><div>${s.aliases.length ? esc(s.aliases.join(", ")) : "-"}</div>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2>Entity resolution &middot; ${esc(er.embedding_backend)} embeddings &middot; ${er.candidates_considered} candidates</h2>
-      <table><tr><th>Feature</th><th>Score</th><th></th><th></th></tr>${breakdown}</table>
-      <details style="margin-top:12px"><summary>Rejected alternatives</summary>
-        <table style="margin-top:8px"><tr><th>Name</th><th>Source</th><th>Conf.</th><th></th></tr>${alts}</table>
-      </details>
-    </div>
-
-    <div class="card">
-      <h2>Sanctions &middot; OFAC</h2>
-      <div>${d.sanctions.match
-        ? `<span class="badge critical">MATCH</span> ${esc(d.sanctions.matched_entity?.name)}
-           <span class="muted">(program ${esc(d.sanctions.matched_entity?.program)}, similarity ${d.sanctions.confidence})</span>`
-        : `<span class="badge low">NO MATCH</span> <span class="muted">screened against ${d.sanctions.list_size} SDN names</span>`}
-      </div>
-    </div>
-
-    <div class="card"><h2>Ownership &amp; officers</h2>
-      <table><tr><th>Name</th><th>Role</th><th>Source</th><th>Conf.</th></tr>${own}</table></div>
-
-    <div class="card"><h2>Litigation</h2>
-      <table><tr><th>Case</th><th>Court</th><th>Filed</th></tr>${cases}</table></div>
-
-    <div class="card"><h2>Adverse media</h2>
-      <table><tr><th>Headline</th><th>Source</th><th>Date</th><th>Sentiment</th><th>Sev.</th></tr>${media}</table></div>
-
-    <div class="card">
-      <h2>Agent report &middot; ${esc(a.generated_by || "")}</h2>
-      <p>${esc(a.summary)}</p>
-      <div class="kv" style="margin-top:10px">
-        <div>Identity</div><div>${esc(a.identity_assessment)}</div>
-        <div>Ownership</div><div>${esc(a.ownership_assessment)}</div>
-        <div>Sanctions</div><div>${esc(a.sanctions_assessment)}</div>
-        <div>Litigation</div><div>${esc(a.litigation_assessment)}</div>
-        <div>Adverse media</div><div>${esc(a.adverse_media_assessment)}</div>
-      </div>
-      ${a.evidence_gaps?.length ? `<p class="muted" style="margin-top:10px">Gaps: ${esc(a.evidence_gaps.join("; "))}</p>` : ""}
-    </div>
-
-    <div class="card"><h2>Evidence</h2>
-      <table><tr><th>ID</th><th>Source</th><th>Description</th></tr>${ev}</table></div>
-
-    <details class="card"><summary>Raw intelligence object (JSON)</summary>
-      <pre>${esc(JSON.stringify(d, null, 2))}</pre></details>
-  `;
+  svg.innerHTML = edgeSvg + nodeSvg;
+  if(SELECTED) renderSide(nodes.find(n=>n.id===SELECTED));
+  else $("side").innerHTML = `<div class="empty">Select a node to inspect it.</div>`;
+  renderGraphDetail();
 }
+
+function selectNode(id){ SELECTED = id; drawGraph(); }
+
+function renderSide(n){
+  if(!n){ $("side").innerHTML = `<div class="empty">Select a node.</div>`; return; }
+  const g = DATA.graph[GRAPH];
+  const linked = g.edges.filter(e=>e.source===n.id||e.target===n.id);
+  let html = `<div style="font-weight:600;margin-bottom:9px">${esc(n.label)}</div>
+    <div class="kv">
+      <div>Type</div><div>${esc(n.type)}</div>
+      ${n.source?`<div>Source</div><div>${esc(n.source)}</div>`:""}
+      ${n.confidence!=null?`<div>Confidence</div><div>${n.confidence.toFixed(2)}
+        <div class="bar"><i style="width:${Math.round(n.confidence*100)}%"></i></div></div>`:""}
+      ${n.detail?`<div>Detail</div><div class="dim">${esc(n.detail)}</div>`:""}
+    </div>`;
+  if(n.breakdown && Object.keys(n.breakdown).length){
+    html += `<div style="margin-top:13px"><h2>Match features</h2><div class="kv">` +
+      Object.entries(n.breakdown).map(([k,v])=>
+        `<div>${esc(k)}</div><div>${v.toFixed(2)}
+          <div class="bar"><i style="width:${Math.round(v*100)}%"></i></div></div>`).join("") +
+      `</div></div>`;
+  }
+  const txEdge = linked.find(e=>e.kind==="transaction");
+  if(txEdge){
+    html += `<div style="margin-top:13px"><h2>Filed transactions</h2><div class="kv">
+      <div>Count</div><div>${txEdge.count}</div>
+      <div>Shares</div><div>${num(txEdge.shares)}</div>
+      <div>Acquired</div><div>${money(txEdge.acquired_value)}</div>
+      <div>Disposed</div><div>${money(txEdge.disposed_value)}</div>
+    </div></div>`;
+  }
+  html += `<div class="dim" style="margin-top:13px;font-size:12px">${linked.length} connection(s)</div>`;
+  $("side").innerHTML = html;
+}
+
+function renderGraphDetail(){
+  const d = DATA;
+  if(GRAPH === "resolution"){
+    const er = d.entity_resolution;
+    $("detailTitle").textContent = "Why this identity was selected";
+    const rows = [er.selected, ...er.alternatives].filter(Boolean);
+    $("graphDetail").innerHTML = rows.length ? `<table>
+      <tr><th>Candidate</th><th>Source</th><th>Confidence</th><th>Feature breakdown</th></tr>
+      ${rows.map((c,i)=>`<tr>
+        <td>${i===0?"<b>":""}${esc(c.name)}${i===0?"</b> <span class='badge low'>selected</span>":""}</td>
+        <td class="dim">${esc(c.source)}</td>
+        <td>${c.confidence.toFixed(2)}<div class="bar"><i style="width:${Math.round(c.confidence*100)}%"></i></div></td>
+        <td class="dim">${Object.entries(c.confidence_breakdown||{})
+            .map(([k,v])=>`${esc(k)} ${v.toFixed(2)}`).join(" &middot; ")}</td>
+      </tr>`).join("")}</table>
+      <div class="dim" style="margin-top:9px;font-size:12px">
+        Embeddings: ${esc(er.embedding_backend)} &middot; ${er.candidates_considered} candidates
+        &middot; match threshold ${er.match_threshold}</div>` : `<div class="empty">No candidates.</div>`;
+  } else if(GRAPH === "network"){
+    $("detailTitle").textContent = "Related parties";
+    $("graphDetail").innerHTML = d.ownership.length ? `<table>
+      <tr><th>Name</th><th>Role</th><th>Relationship</th><th>Source</th><th>Conf.</th></tr>
+      ${d.ownership.map(o=>`<tr>
+        <td>${o.evidence_url?`<a href="${esc(o.evidence_url)}" target="_blank" rel="noopener">${esc(o.name)}</a>`:esc(o.name)}</td>
+        <td class="dim">${esc(o.role)}</td><td class="dim">${esc(o.relationship_type)}</td>
+        <td class="dim">${esc(o.source)}</td><td>${(o.confidence??0).toFixed(2)}</td>
+      </tr>`).join("")}</table>` : `<div class="empty">No related parties found.</div>`;
+  } else {
+    const t = d.transactions;
+    $("detailTitle").textContent = "SEC Form 4 insider transactions";
+    if(!t.available){ $("graphDetail").innerHTML = `<div class="empty">${esc(t.note)}</div>`; return; }
+    const s = t.summary;
+    $("graphDetail").innerHTML = `
+      <div class="tiles" style="margin-bottom:12px">
+        <div class="tile"><div class="k">Transactions</div><div class="v">${s.count}</div>
+          <div class="s">${esc(s.earliest)} to ${esc(s.latest)}</div></div>
+        <div class="tile"><div class="k">Insiders</div><div class="v">${s.insiders}</div></div>
+        <div class="tile"><div class="k">Acquired</div>
+          <div class="v" style="font-size:19px;color:var(--low)">${money(s.acquired_value)}</div>
+          <div class="s">${s.acquired_count} txns</div></div>
+        <div class="tile"><div class="k">Disposed</div>
+          <div class="v" style="font-size:19px;color:var(--high)">${money(s.disposed_value)}</div>
+          <div class="s">${s.disposed_count} txns</div></div>
+      </div>
+      <table>
+        <tr><th>Date</th><th>Insider</th><th>Type</th><th>Direction</th><th>Shares</th><th>Value</th></tr>
+        ${t.records.slice(0,40).map(x=>`<tr>
+          <td class="dim">${esc(x.date)}</td>
+          <td>${x.filing_url?`<a href="${esc(x.filing_url)}" target="_blank" rel="noopener">${esc(x.insider)}</a>`:esc(x.insider)}</td>
+          <td class="dim">${esc(x.code_label)}</td>
+          <td><span class="badge ${x.direction==="acquired"?"low":"high"}">${esc(x.direction)}</span></td>
+          <td>${num(x.shares)}</td><td>${money(x.value)}</td>
+        </tr>`).join("")}
+      </table>
+      <div class="dim" style="margin-top:9px;font-size:12px">
+        Reported securities transactions filed on SEC Form 4 &mdash; actual filings,
+        not inferred payment flows.</div>`;
+  }
+}
+setType("organization");
 </script>
 </body>
 </html>

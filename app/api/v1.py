@@ -11,6 +11,7 @@ from app import db as database
 from app.models import Investigation
 from app.pipeline import investigate
 from app.resolution.embeddings import active_backend
+from app.risk.taxonomy import category_labels
 from app.schemas import InvestigationRequest, InvestigationResponse
 from app.sources import ofac
 
@@ -30,6 +31,11 @@ async def investigate_supplier(request: InvestigationRequest) -> InvestigationRe
             country=request.country,
             website=request.website,
             address=request.address,
+            city=request.city,
+            entity_type=request.entity_type,
+            date_of_birth=request.date_of_birth,
+            registration_number=request.registration_number,
+            aliases=request.aliases,
         )
     except Exception as exc:  # noqa: BLE001
         log.exception("investigation failed")
@@ -77,6 +83,12 @@ async def get_investigation(investigation_id: int) -> dict:
 async def refresh_ofac() -> dict:
     count = await ofac.ingest(force=True)
     return {"indexed_names": count}
+
+
+@router.get("/risk-categories", summary="Adverse-media risk taxonomy")
+async def risk_categories() -> dict:
+    """The tag vocabulary the dashboard filters on."""
+    return {"categories": category_labels()}
 
 
 @router.get("/health", summary="Service and dependency status")

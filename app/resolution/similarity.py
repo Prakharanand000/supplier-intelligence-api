@@ -108,12 +108,24 @@ def token_set_ratio(a: str, b: str) -> float:
     return len(ta & tb) / len(ta | tb)
 
 
+def _sorted_tokens(value: str) -> str:
+    return " ".join(sorted(value.split()))
+
+
 def name_similarity(a: str, b: str) -> dict[str, float]:
-    """Blend the three views of name similarity into one score."""
+    """Blend the three views of name similarity into one score.
+
+    Edit distance is measured against both the given order and a token-sorted
+    form, keeping the better of the two. Sanctions and registry lists write
+    people surname-first ("NASRALLAH, Hasan") while users type them
+    forename-first; without this, an exact match scores like a stranger.
+    """
     if not a or not b:
         return {"levenshtein": 0.0, "jaro_winkler": 0.0, "token_set": 0.0, "score": 0.0}
-    lev = levenshtein_ratio(a, b)
-    jw = jaro_winkler(a, b)
+
+    a_sorted, b_sorted = _sorted_tokens(a), _sorted_tokens(b)
+    lev = max(levenshtein_ratio(a, b), levenshtein_ratio(a_sorted, b_sorted))
+    jw = max(jaro_winkler(a, b), jaro_winkler(a_sorted, b_sorted))
     tok = token_set_ratio(a, b)
     # Token overlap is weighted heaviest: it survives suffix/word-order noise,
     # which is the dominant failure mode across company registries.

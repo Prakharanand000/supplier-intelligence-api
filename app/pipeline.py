@@ -45,8 +45,15 @@ async def investigate(
     country: str | None = None,
     website: str | None = None,
     address: str | None = None,
+    city: str | None = None,
+    entity_type: str = "organization",
+    date_of_birth: str | None = None,
+    registration_number: str | None = None,
+    aliases: list[str] | None = None,
 ) -> dict[str, Any]:
     started = time.perf_counter()
+    aliases = aliases or []
+    full_address = ", ".join(p for p in (address, city) if p) or None
 
     # ---- 1. Live source fan-out ------------------------------------------
     tasks = [
@@ -55,7 +62,7 @@ async def investigate(
         _safe("gdelt", gdelt.search(name), []),
         _safe("courtlistener", courtlistener.search(name),
               {"available": False, "cases": [], "note": "not run"}),
-        _safe("ofac", ofac.screen(name, country),
+        _safe("ofac", ofac.screen(name, country, date_of_birth),
               {"match": False, "confidence": 0.0, "matched_entity": None,
                "source": "OFAC", "list_size": 0}),
     ]
@@ -112,28 +119,35 @@ async def investigate(
         candidates=candidates,
         query_country=country,
         query_website=website,
-        query_address=address,
+        query_address=full_address,
     )
     best = pick_best(resolutions)
     identity_confidence = best.confidence if best else 0.0
     identity_verdict = verdict(identity_confidence)
 
     supplier = _build_supplier(
-        name, country, website, best, resolutions, identity_confidence, identity_verdict
+        name, country, website, best, resolutions, identity_confidence,
+        identity_verdict, entity_type,
     )
+    if registration_number and not supplier["registration_number"]:
+        supplier["registration_number"] = registration_number
+    if aliases:
+        supplier["aliases"] = list(dict.fromkeys([*supplier["aliases"], *aliases]))
 
     # ---- 3. Re-screen against the resolved legal name ---------------------
     if best and normalize_name(best.record.name) != normalize_name(name):
         try:
-            rescreen = await ofac.screen(best.record.name, country)
+            rescreen = await ofac.screen(best.record.name, country, date_of_birth)
             if rescreen.get("match") and not sanctions.get("match"):
                 rescreen["screened_name"] = best.record.name
                 sanctions = rescreen
         except Exception as exc:  # noqa: BLE001
             log.warning("OFAC re-screen failed: %s", exc)
 
-    # ---- 4. Ownership graph ----------------------------------------------
+    # ---- 4. Ownership graph, transactions, media aggregation -------------
     ownership = _build_ownership(resolutions)
+    transactions = _build_transactions(resolutions, supplier["name"])
+    media_summary = _summarize_media(media)
 
     # ---- 5. Evidence layer -----------------------------------------------
     evidence = _build_evidence(resolutions, media, litigation, sanctions)
@@ -152,9 +166,14 @@ async def investigate(
     investigation: dict[str, Any] = {
         "query": {
             "name": name,
+            "entity_type": entity_type,
             "country": country,
             "website": website,
             "address": address,
+            "city": city,
+            "date_of_birth": date_of_birth,
+            "registration_number": registration_number,
+            "aliases": aliases,
         },
         "supplier": supplier,
         "entity_resolution": {
@@ -187,7 +206,12 @@ async def investigate(
         "ownership": ownership,
         "sanctions": sanctions,
         "adverse_media": media,
+        "media_summary": media_summary,
         "litigation": litigation,
+        "transactions": transactions,
+        "graph": _build_graphs(
+            resolutions, ownership, supplier, transactions, name
+        ),
         "risk": risk,
         "evidence": evidence,
         "sources_consulted": consulted,
@@ -229,6 +253,7 @@ def _build_supplier(
     resolutions: list,
     confidence: float,
     status: str,
+    entity_type: str = "organization",
 ) -> dict[str, Any]:
     lei = next(
         (r.record.raw.get("lei") for r in resolutions
@@ -253,6 +278,7 @@ def _build_supplier(
             "verified": status == "verified",
             "status": status,
             "identity_confidence": confidence,
+            "entity_type": entity_type,
             "country": record.country or country,
             "website": record.website or (normalize_domain(website) or None),
             "lei": lei,
@@ -267,6 +293,7 @@ def _build_supplier(
         "verified": False,
         "status": status,
         "identity_confidence": confidence,
+        "entity_type": entity_type,
         "country": country,
         "website": normalize_domain(website) or None,
         "lei": None,
@@ -343,6 +370,233 @@ def _build_ownership(resolutions: list) -> list[dict[str, Any]]:
 
     ownership.sort(key=lambda o: o["confidence"], reverse=True)
     return ownership
+
+
+def _summarize_media(media: list[dict]) -> dict[str, Any]:
+    """Aggregate adverse media into the counts the dashboard filters on."""
+    by_category: dict[str, dict] = {}
+    by_month: dict[str, int] = {}
+
+    for article in media:
+        for category in article.get("categories", []):
+            bucket = by_category.setdefault(
+                category["key"],
+                {
+                    "key": category["key"],
+                    "label": category["label"],
+                    "count": 0,
+                    "peak_severity": 0.0,
+                },
+            )
+            bucket["count"] += 1
+            bucket["peak_severity"] = max(
+                bucket["peak_severity"], category["severity"]
+            )
+        date = article.get("date")
+        if date and len(date) >= 7:
+            by_month[date[:7]] = by_month.get(date[:7], 0) + 1
+
+    categories = sorted(
+        by_category.values(), key=lambda c: (c["count"], c["peak_severity"]), reverse=True
+    )
+    return {
+        "total": len(media),
+        "categories": categories,
+        "timeline": [
+            {"month": month, "count": count}
+            for month, count in sorted(by_month.items())
+        ],
+        "peak_severity": max((a["severity"] for a in media), default=0.0),
+        "sources": len({a["source"] for a in media}),
+    }
+
+
+def _build_transactions(resolutions: list, supplier_name: str) -> dict[str, Any]:
+    """Insider transactions filed on Form 4 by the resolved entity's officers.
+
+    These are actual reported securities transactions, not inferred or
+    simulated payment flows.
+    """
+    if not resolutions:
+        return {"available": False, "records": [], "summary": {}, "note": "no candidates"}
+
+    best = resolutions[0]
+    records = list(best.record.raw.get("transactions") or [])
+    if not records:
+        return {
+            "available": False,
+            "records": [],
+            "summary": {},
+            "note": (
+                "No Form 4 insider transactions found. Non-US entities have no "
+                "Section 16 filing obligation."
+            ),
+        }
+
+    records.sort(key=lambda t: t.get("date") or "", reverse=True)
+
+    acquired = [t for t in records if t["direction"] == "acquired"]
+    disposed = [t for t in records if t["direction"] == "disposed"]
+    valued = [t for t in records if t.get("value")]
+
+    return {
+        "available": True,
+        "records": records[:120],
+        "note": None,
+        "summary": {
+            "count": len(records),
+            "insiders": len({t["insider"] for t in records}),
+            "acquired_count": len(acquired),
+            "disposed_count": len(disposed),
+            "total_value": round(sum(t["value"] for t in valued), 2) if valued else None,
+            "acquired_value": round(
+                sum(t["value"] for t in acquired if t.get("value")), 2
+            ),
+            "disposed_value": round(
+                sum(t["value"] for t in disposed if t.get("value")), 2
+            ),
+            "earliest": min((t["date"] for t in records), default=None),
+            "latest": max((t["date"] for t in records), default=None),
+            "issuer": supplier_name,
+        },
+    }
+
+
+def _build_graphs(
+    resolutions: list,
+    ownership: list[dict],
+    supplier: dict,
+    transactions: dict,
+    query_name: str,
+) -> dict[str, Any]:
+    """Two graphs the analyst can drill into.
+
+    `resolution` shows why one identity was chosen over its lookalikes.
+    `network` shows the entity's officers and corporate parents.
+    `transactions` shows insiders trading against the issuer.
+    """
+    # --- Entity resolution graph ------------------------------------------
+    res_nodes = [
+        {
+            "id": "query",
+            "label": query_name,
+            "type": "query",
+            "detail": "Search subject",
+        }
+    ]
+    res_edges = []
+    for i, res in enumerate(resolutions[:10]):
+        node_id = f"cand{i}"
+        top_feature = (
+            max(res.breakdown.items(), key=lambda kv: kv[1])[0]
+            if res.breakdown
+            else "name"
+        )
+        res_nodes.append(
+            {
+                "id": node_id,
+                "label": res.record.name,
+                "type": "selected" if i == 0 else ("match" if res.matched else "rejected"),
+                "source": res.record.source,
+                "confidence": res.confidence,
+                "breakdown": res.breakdown,
+                "detail": res.explanation,
+            }
+        )
+        res_edges.append(
+            {
+                "source": "query",
+                "target": node_id,
+                "weight": res.confidence,
+                "label": f"{res.confidence:.2f} ({top_feature})",
+            }
+        )
+
+    # --- Ownership / officer network --------------------------------------
+    center = "entity"
+    net_nodes = [
+        {
+            "id": center,
+            "label": supplier["name"],
+            "type": "entity",
+            "detail": f"{supplier['status']} - confidence {supplier['identity_confidence']:.2f}",
+        }
+    ]
+    net_edges = []
+    for i, party in enumerate(ownership[:40]):
+        node_id = f"p{i}"
+        is_parent = party["relationship_type"] in ("direct_parent", "ultimate_parent")
+        net_nodes.append(
+            {
+                "id": node_id,
+                "label": party["name"],
+                "type": "parent" if is_parent else "person",
+                "source": party.get("source"),
+                "confidence": party.get("confidence"),
+                "detail": party.get("role"),
+            }
+        )
+        net_edges.append(
+            {
+                "source": node_id if is_parent else node_id,
+                "target": center,
+                "weight": party.get("confidence") or 0.5,
+                "label": party.get("role") or party["relationship_type"],
+                "kind": "ownership" if is_parent else "officer",
+            }
+        )
+
+    # --- Transaction network ----------------------------------------------
+    txn_nodes: list[dict] = []
+    txn_edges: list[dict] = []
+    if transactions.get("available"):
+        txn_nodes.append(
+            {"id": "issuer", "label": supplier["name"], "type": "entity",
+             "detail": "Issuer"}
+        )
+        per_insider: dict[str, dict] = {}
+        for txn in transactions["records"]:
+            bucket = per_insider.setdefault(
+                txn["insider"],
+                {"acquired": 0.0, "disposed": 0.0, "count": 0, "shares": 0.0},
+            )
+            bucket["count"] += 1
+            bucket["shares"] += txn.get("shares") or 0
+            bucket[txn["direction"]] += txn.get("value") or 0.0
+
+        for i, (insider, totals) in enumerate(
+            sorted(per_insider.items(), key=lambda kv: kv[1]["count"], reverse=True)
+        ):
+            node_id = f"i{i}"
+            txn_nodes.append(
+                {
+                    "id": node_id,
+                    "label": insider,
+                    "type": "person",
+                    "detail": f"{totals['count']} filed transaction(s)",
+                }
+            )
+            net_value = totals["acquired"] - totals["disposed"]
+            txn_edges.append(
+                {
+                    "source": node_id,
+                    "target": "issuer",
+                    "weight": min(1.0, totals["count"] / 10),
+                    "count": totals["count"],
+                    "shares": round(totals["shares"], 2),
+                    "acquired_value": round(totals["acquired"], 2),
+                    "disposed_value": round(totals["disposed"], 2),
+                    "direction": "acquired" if net_value >= 0 else "disposed",
+                    "label": f"{totals['count']} txn",
+                    "kind": "transaction",
+                }
+            )
+
+    return {
+        "resolution": {"nodes": res_nodes, "edges": res_edges},
+        "network": {"nodes": net_nodes, "edges": net_edges},
+        "transactions": {"nodes": txn_nodes, "edges": txn_edges},
+    }
 
 
 def _build_evidence(

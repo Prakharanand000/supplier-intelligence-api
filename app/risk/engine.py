@@ -52,15 +52,27 @@ def evaluate(
     if sanctions.get("match"):
         entity = sanctions.get("matched_entity") or {}
         confidence = float(sanctions.get("confidence", 0.0))
-        # A "possible" match scores lower than a confirmed one, but never zero.
-        severity = int(round(WEIGHT_SANCTIONS * max(0.6, confidence)))
+        dob_check = sanctions.get("dob_check") or {}
+
+        # Date of birth is the strongest available discriminator between a
+        # true hit and a namesake, so it has to move the score - otherwise
+        # collecting it is theatre. A conflict does not clear the subject
+        # outright (aliases and bad data exist), it demotes to manual review.
+        modifier, qualifier = 1.0, ""
+        if dob_check.get("status") == "conflict":
+            modifier = 0.45
+            qualifier = "; listed DOB conflicts, likely a namesake - manual review"
+        elif dob_check.get("status") == "match":
+            qualifier = "; DOB corroborates the match"
+
+        severity = int(round(WEIGHT_SANCTIONS * max(0.6, confidence) * modifier))
         signals.append(
             Signal(
                 category="sanctions",
                 description=(
                     f"OFAC SDN name match: '{entity.get('name')}' "
                     f"(program {entity.get('program') or 'unknown'}, "
-                    f"similarity {confidence:.2f})"
+                    f"similarity {confidence:.2f}){qualifier}"
                 ),
                 severity=severity,
                 source="OFAC",

@@ -14,6 +14,7 @@ import asyncio
 import csv
 import io
 import logging
+import re
 from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import delete, func, select
@@ -39,6 +40,45 @@ ALT_URLS = [
 # Screening thresholds. Below WEAK we report no match at all.
 STRONG_MATCH = 0.90
 WEAK_MATCH = 0.80
+
+# SDN remarks carry dates of birth as free text, e.g.
+# "DOB 05 Feb 1963; POB Tehran, Iran; nationality Iran".
+_DOB_YEARS = re.compile(r"DOB[^;]*?(\d{4})", re.I)
+_QUERY_YEAR = re.compile(r"(\d{4})")
+
+
+def _dob_years(remarks: str | None) -> set[str]:
+    return set(_DOB_YEARS.findall(remarks or ""))
+
+
+def _check_dob(query_dob: str | None, remarks: str | None) -> dict | None:
+    """Corroborate or rule out a name hit using date of birth.
+
+    A shared name with a conflicting DOB is the single most common false
+    positive in sanctions screening, so a mismatch is reported explicitly
+    rather than being averaged away.
+    """
+    if not query_dob:
+        return None
+    listed = _dob_years(remarks)
+    if not listed:
+        return {"status": "unavailable", "note": "no DOB published for this entry"}
+
+    query_years = set(_QUERY_YEAR.findall(query_dob))
+    if not query_years:
+        return {"status": "unavailable", "note": "could not read a year from input"}
+
+    if query_years & listed:
+        return {
+            "status": "match",
+            "listed_years": sorted(listed),
+            "note": "date of birth corroborates the name match",
+        }
+    return {
+        "status": "conflict",
+        "listed_years": sorted(listed),
+        "note": "listed date of birth differs - likely a different individual",
+    }
 
 _index: dict[str, list[int]] = {}
 _entries: list[dict] = []
@@ -198,7 +238,9 @@ async def _load_index() -> None:
     log.info("OFAC: in-memory index ready (%d names)", len(_entries))
 
 
-async def screen(name: str, country: str | None = None) -> dict:
+async def screen(
+    name: str, country: str | None = None, date_of_birth: str | None = None
+) -> dict:
     """Screen a company name against the SDN list.
 
     Returns the OFAC block of the investigation object.
@@ -237,6 +279,20 @@ async def screen(name: str, country: str | None = None) -> dict:
         if score > best_score:
             best_score, best = score, entry
 
+    # A DOB conflict on the top hit is strong evidence of a namesake, so prefer
+    # a slightly weaker name match whose date of birth actually corroborates.
+    dob_check = _check_dob(date_of_birth, best["remarks"] if best else None)
+    if dob_check and dob_check["status"] == "conflict":
+        for idx in candidate_ids:
+            entry = _entries[idx]
+            score = name_similarity(normalized, entry["normalized_name"])["score"]
+            if score < WEAK_MATCH:
+                continue
+            alternative = _check_dob(date_of_birth, entry["remarks"])
+            if alternative and alternative["status"] == "match":
+                best, best_score, dob_check = entry, score, alternative
+                break
+
     if best is None or best_score < WEAK_MATCH:
         return {
             "match": False,
@@ -254,10 +310,19 @@ async def screen(name: str, country: str | None = None) -> dict:
             "list_size": len(_entries),
         }
 
+    # A corroborating DOB raises confidence; a conflicting one demotes the hit
+    # to "possible" no matter how well the name scored.
+    strength = "strong" if best_score >= STRONG_MATCH else "possible"
+    if dob_check and dob_check["status"] == "conflict":
+        strength = "possible"
+    elif dob_check and dob_check["status"] == "match":
+        strength = "strong"
+
     return {
         "match": True,
         "confidence": round(best_score, 4),
-        "match_strength": "strong" if best_score >= STRONG_MATCH else "possible",
+        "match_strength": strength,
+        "dob_check": dob_check,
         "matched_entity": {
             "name": best["name"],
             "ent_num": best["ent_num"],

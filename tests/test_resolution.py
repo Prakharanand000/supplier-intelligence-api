@@ -74,6 +74,17 @@ def test_name_similarity_survives_word_order():
     assert score > 0.7
 
 
+def test_surname_first_listing_still_matches():
+    """OFAC writes people surname-first; users type forename-first."""
+    result = name_similarity("hasan nasrallah", "nasrallah hasan")
+    assert result["score"] > 0.95
+    assert result["levenshtein"] == 1.0
+
+
+def test_reordering_does_not_equate_different_names():
+    assert name_similarity("hasan nasrallah", "ahmad jabril")["score"] < 0.5
+
+
 # --- resolution engine -----------------------------------------------------
 def _record(**kwargs) -> EntityRecord:
     kwargs.setdefault("source", "TEST")

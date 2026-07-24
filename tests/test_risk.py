@@ -41,6 +41,34 @@ def test_sanctions_match_dominates():
     assert risk["score"] >= 80
 
 
+def _sanctions_hit(dob_status=None):
+    hit = {
+        "match": True, "confidence": 1.0, "list_size": 17000,
+        "matched_entity": {"name": "NASRALLAH, Hasan", "program": "SDGT"},
+    }
+    if dob_status:
+        hit["dob_check"] = {"status": dob_status, "listed_years": ["1953"], "note": "x"}
+    return hit
+
+
+def test_dob_conflict_demotes_a_sanctions_hit():
+    """A namesake with a different DOB must not score as a confirmed hit."""
+    corroborated, _ = _evaluate(sanctions=_sanctions_hit("match"))
+    conflicted, _ = _evaluate(sanctions=_sanctions_hit("conflict"))
+
+    assert corroborated["score"] == 100 and corroborated["level"] == "critical"
+    assert conflicted["score"] < corroborated["score"]
+    # Demoted, but not cleared - aliases and incomplete records exist.
+    assert conflicted["score"] > 0
+    assert "namesake" in conflicted["reasons"][0]
+
+
+def test_dob_absent_scores_the_same_as_before():
+    with_dob, _ = _evaluate(sanctions=_sanctions_hit("match"))
+    without, _ = _evaluate(sanctions=_sanctions_hit(None))
+    assert with_dob["score"] == without["score"]
+
+
 def test_score_is_capped_at_100():
     risk, _ = _evaluate(
         sanctions={

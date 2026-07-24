@@ -10,6 +10,7 @@ from __future__ import annotations
 import html
 import logging
 import re
+import xml.etree.ElementTree as ET
 from typing import Any
 
 from app.http_client import fetch, fetch_json
@@ -27,13 +28,122 @@ COMPANY_PAGE = (
 
 _ticker_cache: list[dict] | None = None
 
-# Reporting-owner fields inside a Form 4 XML document.
+# Fallback for Form 4 documents that will not parse as XML.
 _RPT_OWNER = re.compile(r"<rptOwnerName>([^<]+)</rptOwnerName>")
 _OFFICER_TITLE = re.compile(r"<officerTitle>([^<]+)</officerTitle>")
 _IS_DIRECTOR = re.compile(r"<isDirector>\s*(1|true)\s*</isDirector>", re.I)
 # EDGAR serves an XSL-rendered HTML view at xslF345X0N/<doc>; stripping the
 # prefix yields the raw XML that actually carries the owner fields.
 _XSL_PREFIX = re.compile(r"^xsl[^/]*/")
+
+# Form 4 transaction codes. P/S are open-market trades and carry the most
+# signal; A/M/F are compensation mechanics.
+TRANSACTION_CODES = {
+    "P": "Open-market purchase",
+    "S": "Open-market sale",
+    "A": "Grant or award",
+    "M": "Option exercise",
+    "X": "Option exercise",
+    "F": "Shares withheld for tax",
+    "G": "Gift",
+    "D": "Disposition to issuer",
+    "C": "Conversion",
+    "J": "Other acquisition or disposition",
+}
+
+
+def _text(node: ET.Element | None, path: str) -> str | None:
+    """Form 4 wraps most scalars in a <value> child."""
+    if node is None:
+        return None
+    found = node.find(path)
+    if found is None:
+        return None
+    value = found.findtext("value")
+    if value is None:
+        value = found.text
+    return value.strip() if value else None
+
+
+def _to_float(value: str | None) -> float | None:
+    try:
+        return float(value) if value not in (None, "") else None
+    except (TypeError, ValueError):
+        return None
+
+
+def _regex_fallback(body: str) -> dict | None:
+    """Recover the owner from a document the XML path could not read.
+
+    Covers both the XSL-rendered HTML view (not well-formed XML) and
+    well-formed documents that simply lack the expected elements.
+    """
+    owner = _RPT_OWNER.search(body)
+    if not owner:
+        return None
+    title = _OFFICER_TITLE.search(body)
+    return {
+        "owner": html.unescape(owner.group(1)).strip(),
+        "role": html.unescape(title.group(1)).strip() if title else None,
+        "is_director": bool(_IS_DIRECTOR.search(body)),
+        "transactions": [],
+    }
+
+
+def _parse_form4(body: str) -> dict | None:
+    """Extract the reporting owner, their role, and their transactions."""
+    try:
+        root = ET.fromstring(body)
+    except ET.ParseError:
+        return _regex_fallback(body)
+
+    owner = root.findtext(".//reportingOwnerId/rptOwnerName")
+    if not owner:
+        # Parsed cleanly but is not a Form 4 shape we recognise.
+        return _regex_fallback(body)
+
+    relationship = root.find(".//reportingOwnerRelationship")
+    role = None
+    is_director = False
+    if relationship is not None:
+        role = (relationship.findtext("officerTitle") or "").strip() or None
+        is_director = (relationship.findtext("isDirector") or "").strip() in (
+            "1", "true", "Y",
+        )
+
+    transactions: list[dict] = []
+    for node in root.findall(".//nonDerivativeTransaction"):
+        amounts = node.find("transactionAmounts")
+        shares = _to_float(_text(amounts, "transactionShares"))
+        price = _to_float(_text(amounts, "transactionPricePerShare"))
+        disposed = (_text(amounts, "transactionAcquiredDisposedCode") or "").upper()
+        code = (
+            node.findtext("transactionCoding/transactionCode") or ""
+        ).strip().upper()
+        date = _text(node, "transactionDate")
+
+        if shares is None or not date:
+            continue
+
+        transactions.append(
+            {
+                "date": date,
+                "security": _text(node, "securityTitle"),
+                "code": code,
+                "code_label": TRANSACTION_CODES.get(code, code or "Unspecified"),
+                "direction": "acquired" if disposed == "A" else "disposed",
+                "shares": shares,
+                "price_per_share": price,
+                "value": round(shares * price, 2) if price else None,
+            }
+        )
+
+    return {
+        "owner": owner.strip(),
+        "role": role,
+        "is_director": is_director,
+        "transactions": transactions,
+    }
 
 
 async def _load_tickers() -> list[dict]:
@@ -92,13 +202,17 @@ async def _find_ciks(name: str, limit: int = 5) -> list[dict]:
     return [entry for _, entry in scored[:limit]]
 
 
-async def _officers(
-    cik: str, sub: dict, issuer_name: str, limit: int = 8, max_filings: int = 12
-) -> list[dict[str, Any]]:
-    """Executives and directors, read from recent Form 4 insider filings.
+async def _insiders(
+    cik: str, sub: dict, issuer_name: str, limit: int = 10, max_filings: int = 18
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Executives, directors and their filed transactions, from Form 4s.
 
     Each Form 4 names one reporting owner plus their officer title / director
-    flag, which is the most reliable public statement of who runs a US issuer.
+    flag - the most reliable public statement of who runs a US issuer - and
+    the securities transactions they reported, which is real transaction data
+    rather than an inferred relationship.
+
+    Returns (people, transactions).
     """
     recent = (sub.get("filings") or {}).get("recent") or {}
     forms = recent.get("form") or []
@@ -107,6 +221,7 @@ async def _officers(
     plain_cik = str(int(cik))
 
     people: dict[str, dict] = {}
+    transactions: list[dict] = []
     examined = 0
 
     for i, form in enumerate(forms):
@@ -129,12 +244,13 @@ async def _officers(
         if not body:
             continue
 
-        owner = _RPT_OWNER.search(body)
-        if not owner:
+        parsed = _parse_form4(body)
+        if not parsed:
             continue
+
         # XML entities (&amp;) must be decoded here, or they survive into the
         # report and get escaped a second time by the UI.
-        name = html.unescape(owner.group(1)).strip()
+        name = html.unescape(parsed["owner"]).strip()
 
         # `recent` also contains Form 4s this company filed as the reporting
         # owner of *another* issuer, where the owner is the company itself.
@@ -142,13 +258,16 @@ async def _officers(
         if normalize_name(name) == normalize_name(issuer_name):
             continue
 
-        key = name.lower()
-
-        title_match = _OFFICER_TITLE.search(body)
-        role = html.unescape(title_match.group(1)).strip() if title_match else None
-        if not role and _IS_DIRECTOR.search(body):
+        role = html.unescape(parsed["role"]).strip() if parsed["role"] else None
+        if not role and parsed["is_director"]:
             role = "Director"
 
+        for txn in parsed["transactions"]:
+            txn["insider"] = name.title() if name.isupper() else name
+            txn["filing_url"] = url
+            transactions.append(txn)
+
+        key = name.lower()
         if key in people:
             people[key]["filings"] += 1
             people[key]["role"] = people[key]["role"] or role
@@ -162,7 +281,7 @@ async def _officers(
             "source_url": url,
         }
 
-    return list(people.values())
+    return list(people.values()), transactions
 
 
 async def _submission(cik: str) -> dict | None:
@@ -240,7 +359,7 @@ async def search(name: str, country: str | None = None) -> list[EntityRecord]:
     matches = await _find_ciks(name)
     records: list[EntityRecord] = []
 
-    for match in matches:
+    for rank, match in enumerate(matches):
         sub = await _submission(match["cik"])
         if not sub:
             continue
@@ -253,7 +372,20 @@ async def search(name: str, country: str | None = None) -> list[EntityRecord]:
         ]
         tickers = sub.get("tickers") or []
         issuer_name = sub.get("name") or match["title"]
-        officers = await _officers(match["cik"], sub, issuer_name)
+
+        # Form 4s are one HTTP request each, so only the strongest candidates
+        # earn a deep insider pull. Weak candidates still get enough to
+        # corroborate identity across sources.
+        if rank == 0:
+            officers, transactions = await _insiders(
+                match["cik"], sub, issuer_name, limit=14, max_filings=30
+            )
+        elif rank < 3:
+            officers, transactions = await _insiders(
+                match["cik"], sub, issuer_name, limit=5, max_filings=6
+            )
+        else:
+            officers, transactions = [], []
 
         records.append(
             EntityRecord(
@@ -280,6 +412,7 @@ async def search(name: str, country: str | None = None) -> list[EntityRecord]:
                     "phone": sub.get("phone"),
                     "former_names": former,
                     "officers": officers,
+                    "transactions": transactions,
                     "recent_filings": _recent_filings(sub),
                 },
             )

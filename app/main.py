@@ -77,5 +77,9 @@ if STATIC_DIR.exists():
 async def index():
     index_file = STATIC_DIR / "index.html"
     if index_file.exists():
-        return FileResponse(index_file)
+        # No-cache so a redeploy is always served fresh (the single-page app is
+        # small and self-contained, so there is no caching benefit to preserve).
+        return FileResponse(
+            index_file, headers={"Cache-Control": "no-cache, must-revalidate"}
+        )
     return {"service": "Supplier Intelligence API", "docs": "/docs"}

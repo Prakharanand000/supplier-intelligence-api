@@ -245,6 +245,58 @@ tests/               offline tests for resolution and risk
 
 ---
 
+## The interface
+
+Three stages, following the workflow an analyst actually uses.
+
+**1 &middot; Subject intake.** Organization or individual. Name, aliases, date of
+birth, address, city, country, registration number, website. Only the name is
+required; everything else sharpens entity resolution and suppresses false
+positives.
+
+**2 &middot; Risk dashboard.** KPI tiles, then adverse media tagged against an
+11-category risk taxonomy (Financial Crime, Bribery & Corruption, Sanctions,
+Criminal Proceedings, Litigation, Regulatory, Cyber, Environmental, Labor &
+Human Rights, Product Safety, Governance). Each category is a clickable filter
+chip with its own count, alongside a high-severity toggle and a monthly volume
+timeline. Sanctions, litigation, ownership and the agent report sit below.
+
+**3 &middot; Network drill-down.** Three force-directed graphs:
+
+| Graph | What it shows |
+| --- | --- |
+| Entity resolution | Query at the centre, every candidate scored around it. Click a node for its per-feature breakdown and the weights used - this is the "why this one and not that one" view. |
+| Ownership network | Officers, directors and corporate parents of the resolved entity. |
+| Transaction network | Insiders trading against the issuer, sized by filing count and coloured by net direction. |
+
+The layout is ~30 lines of force-directed simulation rather than a charting
+library, so the page stays dependency-free and works offline.
+
+### On the transaction graph
+
+**These are real filed transactions, not simulated payment flows.** We have no
+payments data and do not invent any. The transaction network is built from
+**SEC Form 4** filings - reported securities transactions by named insiders,
+carrying date, transaction code (open-market purchase, sale, grant, option
+exercise, tax withholding, gift), share count and price - parsed from the XML
+documents already fetched for officer names. Non-US entities have no Section 16
+filing obligation, so the graph is empty for them and says so.
+
+### Screening an individual
+
+Supplying a date of birth changes the outcome rather than decorating it. A name
+hit whose DOB corroborates stays at 100/critical; a hit whose listed DOB
+conflicts is demoted to 70/high and labelled a likely namesake for manual
+review. It is not cleared outright, because aliases and incomplete records
+exist.
+
+Name matching compares token-sorted forms as well as the given order, because
+sanctions lists write people surname-first (`NASRALLAH, Hasan`) while users type
+them forename-first. Without that, an exact match scored 0.67 and was missed
+entirely.
+
+---
+
 ## Deployment
 
 ### Google Cloud Run (what the live demo runs on)
@@ -291,11 +343,15 @@ docker run -p 8000:8000 --env-file .env supplier-intel
 
 ## Known limits
 
-- **Adverse media precision** is the weakest link. GDELT full-text matching is
-  loose; the filter requires every token of the company name in the headline,
-  but a single-token name like "Apple" still admits articles where the company
-  is mentioned rather than accused. Headline-only sentiment is a blunt
-  instrument — article-body scoring would be the next improvement.
+- **Adverse media precision** is the weakest link. The filter requires every
+  token of the company name in the headline and drops automated market-wire
+  copy (analyst ratings, price targets, stake changes), but a single-token name
+  like "Apple" still admits articles where the company is mentioned rather than
+  accused. Headline-only tagging is a blunt instrument — article-body scoring
+  would be the next improvement.
+- **The transaction graph is US-only**, since Form 4 is a Section 16
+  obligation. There is no payments or invoice data in this system and none is
+  simulated.
 - **GDELT rate-limits aggressively** (one request per ~5s per IP) and will
   intermittently return no articles under load.
 - **Officer extraction is US-only**, since it depends on SEC Form 4. Non-US

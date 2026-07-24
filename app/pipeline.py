@@ -551,12 +551,18 @@ def _build_graphs(
                 "detail": party.get("role"),
             }
         )
+        rel = party.get("role") or party["relationship_type"]
         net_edges.append(
             {
-                "source": node_id if is_parent else node_id,
+                "source": node_id,
                 "target": center,
                 "weight": party.get("confidence") or 0.5,
-                "label": party.get("role") or party["relationship_type"],
+                "label": rel,
+                "relationship": rel,
+                "description": (
+                    f"{party['name']} is linked to {supplier['name']} as {rel}"
+                    + (f" ({party['source']} source)." if party.get("source") else ".")
+                ),
                 "kind": "ownership" if is_parent else "officer",
             }
         )

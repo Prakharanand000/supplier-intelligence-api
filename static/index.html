@@ -164,13 +164,41 @@
   .graphwrap{display:grid;grid-template-columns:1fr 300px;gap:16px}
   .canvas{background:linear-gradient(#fff,#fff) padding-box,var(--line);border:1px solid var(--line);
     border-radius:12px;overflow:hidden;position:relative;min-height:520px;box-shadow:var(--shadow)}
-  svg{display:block;width:100%;height:520px;cursor:grab}
+  svg{display:block;width:100%;height:520px;cursor:grab;touch-action:none}
+  svg.panning{cursor:grabbing}
   .legend{position:absolute;left:12px;bottom:12px;display:flex;gap:14px;background:rgba(255,255,255,.92);
     padding:8px 12px;border-radius:9px;border:1px solid var(--line);font-size:11.5px;color:var(--muted);flex-wrap:wrap}
   .legend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:middle}
-  .node{cursor:pointer} .node text{font-size:11px;fill:var(--ink);pointer-events:none}
+  .ghint{position:absolute;right:12px;top:12px;display:flex;gap:6px;align-items:center}
+  .ghint button{width:30px;height:30px;border-radius:8px;border:1px solid var(--line);background:#fff;
+    color:var(--muted);cursor:pointer;font-size:15px;line-height:1;box-shadow:var(--shadow)}
+  .ghint button:hover{color:var(--accent);border-color:var(--accent)}
+  .ghint .tip{font-size:11px;color:var(--dim);background:rgba(255,255,255,.92);border:1px solid var(--line);
+    padding:5px 9px;border-radius:8px;margin-right:2px}
+  .gnode circle{transition:stroke .1s,opacity .15s;cursor:grab}
+  .gnode.pinned circle{stroke-dasharray:2.5 2}
+  .gnode text{font-size:11px;fill:var(--ink);pointer-events:none;paint-order:stroke;
+    stroke:#fff;stroke-width:3px;stroke-linejoin:round}
+  .gedge{transition:opacity .15s}
+  .gedge.pickable{cursor:pointer}
+  .dim-el{opacity:.12}
+  .edge-label{font-size:9.5px;fill:var(--muted);pointer-events:none;paint-order:stroke;stroke:#fff;stroke-width:3px}
   .side{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px;max-height:520px;
     overflow:auto;box-shadow:var(--shadow)}
+  .side .btn{display:inline-flex;align-items:center;gap:6px;background:var(--accent);color:#fff;border:0;
+    padding:8px 13px;border-radius:8px;cursor:pointer;font:inherit;font-size:12.5px;font-weight:600;margin-top:10px}
+  .side .btn:hover{background:#1d4ed8} .side .btn:disabled{opacity:.6;cursor:progress}
+  .side .btn.alt{background:#fff;color:var(--accent);border:1px solid var(--line)}
+  .side .btn.alt:hover{border-color:var(--accent)}
+  .insight{margin-top:12px;background:linear-gradient(180deg,#f7f9ff,#fff);border:1px solid #dbe6ff;
+    border-radius:10px;padding:12px 13px;font-size:12.8px;line-height:1.55}
+  .insight .tag{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:700;color:#4f46e5;
+    text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}
+  .insight .src{margin-top:8px;font-size:10.5px;color:var(--dim)}
+  .neigh{display:flex;flex-direction:column;gap:4px;margin-top:6px}
+  .neigh a{font-size:12.5px;cursor:pointer}
+  .conn{display:flex;align-items:center;gap:8px;font-size:13px;margin:8px 0}
+  .conn .rel{background:var(--soft);border:1px solid var(--line);border-radius:6px;padding:2px 8px;font-size:11px;color:var(--muted)}
   .bar{height:6px;background:var(--soft);border-radius:3px;overflow:hidden;margin-top:4px}
   .bar i{display:block;height:100%;background:var(--accent)}
   pre{background:#0f1420;color:#d6def0;border-radius:10px;padding:14px;overflow:auto;max-height:420px;font-size:11.5px}
@@ -313,13 +341,24 @@
   <section class="view" id="view3">
     <div class="tabs">
       <button class="tab on" id="gt0" onclick="setGraph('resolution')">Entity resolution</button>
-      <button class="tab" id="gt1" onclick="setGraph('network')">Ownership network</button>
+      <button class="tab" id="gt1" onclick="setGraph('network')">Connections network</button>
       <button class="tab" id="gt2" onclick="setGraph('transactions')">Transaction network</button>
     </div>
+    <p class="dim" style="font-size:12.5px;margin:-4px 0 14px" id="graphHint">
+      Drag nodes to arrange &middot; scroll to zoom &middot; drag the background to pan &middot;
+      click a node or a connection line to inspect it and generate an AI insight.</p>
     <div class="graphwrap">
-      <div class="canvas"><svg id="svg" viewBox="0 0 900 520" preserveAspectRatio="xMidYMid meet"></svg>
-        <div class="legend" id="legend"></div></div>
-      <div class="side" id="side"><div class="empty">Select a node to inspect it.</div></div>
+      <div class="canvas">
+        <svg id="svg" viewBox="0 0 900 520" preserveAspectRatio="xMidYMid meet"></svg>
+        <div class="ghint">
+          <span class="tip" id="zoomTip">100%</span>
+          <button title="Zoom in" onclick="Graph.zoomBy(1.25)">+</button>
+          <button title="Zoom out" onclick="Graph.zoomBy(0.8)">&minus;</button>
+          <button title="Reset view" onclick="Graph.reset()">&#9633;</button>
+        </div>
+        <div class="legend" id="legend"></div>
+      </div>
+      <div class="side" id="side"><div class="empty">Select a node or connection to inspect it.</div></div>
     </div>
     <div class="card" style="margin-top:16px"><h2 id="detailTitle">Detail</h2><div id="graphDetail"></div></div>
     <div class="actions" style="margin-bottom:8px">
@@ -404,7 +443,7 @@ function go(step){
   if(step>1&&!DATA)return;
   [1,2,3].forEach(i=>{$("view"+i).classList.toggle("on",i===step);
     $("s"+i).classList.toggle("active",i===step);$("s"+i).classList.toggle("done",i<step);});
-  if(step===3)drawGraph();
+  if(step===3)setGraph(GRAPH);
   window.scrollTo({top:0,behavior:"smooth"});
 }
 
@@ -573,65 +612,210 @@ function renderBias(){
 }
 function toggleDetail(i){const el=$("bd"+i);if(el)el.style.display=el.style.display==="none"?"":"none";}
 
-/* graphs (unchanged logic, light theme) */
-function setGraph(kind){GRAPH=kind;SELECTED=null;
-  ["resolution","network","transactions"].forEach((k,i)=>$("gt"+i).classList.toggle("on",k===kind));drawGraph();}
-function layout(nodes,edges,W,H){
-  const n=nodes.length;if(!n)return;
-  nodes.forEach((nd,i)=>{const ang=(i/n)*Math.PI*2,rad=i===0?0:Math.min(W,H)*0.34;
-    nd.x=W/2+Math.cos(ang)*rad;nd.y=H/2+Math.sin(ang)*rad;nd.vx=0;nd.vy=0;});
-  const idx=Object.fromEntries(nodes.map((d,i)=>[d.id,i]));
-  for(let step=0;step<320;step++){
-    for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){const a=nodes[i],b=nodes[j];
-      let dx=b.x-a.x,dy=b.y-a.y,d2=dx*dx+dy*dy||0.01;const f=17000/d2,d=Math.sqrt(d2);
-      const fx=f*dx/d,fy=f*dy/d;a.vx-=fx;a.vy-=fy;b.vx+=fx;b.vy+=fy;}
-    edges.forEach(e=>{const a=nodes[idx[e.source]],b=nodes[idx[e.target]];if(!a||!b)return;
-      const dx=b.x-a.x,dy=b.y-a.y,d=Math.sqrt(dx*dx+dy*dy)||0.01;
-      const target=185-62*(e.weight||0.5),f=(d-target)*0.035,fx=f*dx/d,fy=f*dy/d;
-      a.vx+=fx;a.vy+=fy;b.vx-=fx;b.vy-=fy;});
-    nodes.forEach((nd,i)=>{nd.vx+=(W/2-nd.x)*(i===0?0.06:0.005);nd.vy+=(H/2-nd.y)*(i===0?0.06:0.007);
+/* ---- interactive force-directed graph engine (vanilla SVG, no deps) ---- */
+const SVGNS="http://www.w3.org/2000/svg";
+const TYPE_STYLE={
+  query:{c:"#2563eb",r:16,l:"Search subject"},selected:{c:"#059669",r:15,l:"Selected identity"},
+  match:{c:"#7c3aed",r:12,l:"Above threshold"},rejected:{c:"#94a3b8",r:9,l:"Rejected candidate"},
+  entity:{c:"#2563eb",r:17,l:"Subject entity"},issuer:{c:"#2563eb",r:16,l:"Issuer"},
+  person:{c:"#d97706",r:12,l:"Person"},holding:{c:"#7c3aed",r:14,l:"Holding / parent"},
+  parent:{c:"#7c3aed",r:13,l:"Corporate parent"},company:{c:"#0d9488",r:13,l:"External firm"},
+  trust:{c:"#8b5cf6",r:12,l:"Trust / family office"}};
+const nstyle=t=>TYPE_STYLE[t]||{c:"#94a3b8",r:10,l:t};
+const el=(tag,a)=>{const e=document.createElementNS(SVGNS,tag);for(const k in a)e.setAttribute(k,a[k]);return e;};
+
+const Graph={
+  svg:null,vp:null,eLayer:null,nLayer:null,bg:null,edgeLabel:null,
+  nodes:[],edges:[],byId:{},kind:null,expandable:false,
+  k:1,tx:0,ty:0,alpha:0,raf:null,drag:null,pan:null,hoverId:null,selNode:null,selEdge:null,W:900,H:520,
+
+  init(){this.svg=$("svg");
+    this.svg.addEventListener("wheel",e=>this.onWheel(e),{passive:false});
+    window.addEventListener("mousemove",e=>this.onMove(e));
+    window.addEventListener("mouseup",()=>this.onUp());},
+
+  isCenter(n){return n.center===true||n.id==="query"||n.id==="issuer"||n.id==="entity";},
+  edgeColor(e){return e.kind==="transaction"?(e.direction==="acquired"?"#059669aa":"#ea580caa"):"#b6c0cf";},
+  edgeW(e){return 1+(e.confidence||e.weight||0.3)*2.4;},
+
+  load(kind){this.kind=kind;this.selNode=this.selEdge=this.hoverId=null;
+    this.expandable=kind==="network"&&!!(DATA&&DATA.graph&&DATA.graph.network_full);
+    const g=(DATA&&DATA.graph&&DATA.graph[kind])||{nodes:[],edges:[]};
+    this.k=1;this.tx=0;this.ty=0;
+    this.nodes=g.nodes.map(n=>({...n}));this.edges=g.edges.map(e=>({...e}));
+    this.byId=Object.fromEntries(this.nodes.map(n=>[n.id,n]));
+    const cx=this.W/2,cy=this.H/2,R=Math.min(this.W,this.H)*0.32,N=this.nodes.length;
+    this.nodes.forEach((nd,i)=>{const c=this.isCenter(nd);const ang=(i/Math.max(1,N))*Math.PI*2;
+      nd.x=c?cx:cx+Math.cos(ang)*R;nd.y=c?cy:cy+Math.sin(ang)*R;nd.vx=0;nd.vy=0;});
+    if(!this.nodes.length){this.showEmpty();return;}
+    this.renderDom();this.updateLegend();this.reheat(1.0);
+    $("side").innerHTML=`<div class="empty">Select a node or connection to inspect it.</div>`;},
+
+  showEmpty(){this.svg.innerHTML=`<text x="450" y="260" text-anchor="middle" fill="#8b94a3" font-size="13">${this.kind==="transactions"?esc((DATA.transactions&&DATA.transactions.note)||"No transaction data."):"No graph data."}</text>`;
+    $("side").innerHTML=`<div class="empty">Nothing to inspect.</div>`;$("legend").innerHTML="";},
+
+  renderDom(){const svg=this.svg;svg.innerHTML="";
+    this.bg=el("rect",{x:-6000,y:-6000,width:12000,height:12000,fill:"transparent"});
+    this.bg.addEventListener("mousedown",e=>this.panStart(e));svg.appendChild(this.bg);
+    this.vp=el("g",{});svg.appendChild(this.vp);
+    this.eLayer=el("g",{});this.vp.appendChild(this.eLayer);
+    this.nLayer=el("g",{});this.vp.appendChild(this.nLayer);
+    this.edges.forEach((e,i)=>{const a=this.byId[e.source],b=this.byId[e.target];if(!a||!b)return;
+      const line=el("line",{x1:a.x,y1:a.y,x2:b.x,y2:b.y,stroke:this.edgeColor(e),"stroke-width":this.edgeW(e),class:"gedge pickable"});
+      line.addEventListener("click",ev=>{ev.stopPropagation();this.selectEdge(i);});
+      line.addEventListener("mouseenter",()=>{this.hoverId=null;this.hoverEdge=i;});
+      e._line=line;this.eLayer.appendChild(line);});
+    this.edgeLabel=el("text",{class:"edge-label","text-anchor":"middle"});this.eLayer.appendChild(this.edgeLabel);
+    this.nodes.forEach(n=>{const st=nstyle(n.type);
+      const g=el("g",{class:"gnode"+(n.pinned?" pinned":"")});
+      const c=el("circle",{r:st.r,fill:st.c,stroke:"#fff","stroke-width":2,cx:n.x,cy:n.y});
+      const lab=n.label.length>24?n.label.slice(0,23)+"…":n.label;
+      const t=el("text",{"text-anchor":"middle",x:n.x,y:n.y+st.r+13});t.textContent=lab;
+      g.appendChild(c);g.appendChild(t);
+      g.addEventListener("mousedown",e=>this.dragStart(n,e));
+      g.addEventListener("dblclick",e=>{e.stopPropagation();this.unpin(n);});
+      g.addEventListener("mouseenter",()=>{this.hoverId=n.id;this.applyEmphasis();});
+      g.addEventListener("mouseleave",()=>{this.hoverId=null;this.applyEmphasis();});
+      n._g=g;n._c=c;n._t=t;this.nLayer.appendChild(g);});
+    this.applyTransform();this.updateStrokes();this.applyEmphasis();},
+
+  tick(){const nodes=this.nodes,cx=this.W/2,cy=this.H/2;
+    for(let i=0;i<nodes.length;i++)for(let j=i+1;j<nodes.length;j++){const a=nodes[i],b=nodes[j];
+      let dx=b.x-a.x,dy=b.y-a.y,d2=dx*dx+dy*dy||0.01,d=Math.sqrt(d2),f=17000/d2,fx=f*dx/d,fy=f*dy/d;
+      a.vx-=fx;a.vy-=fy;b.vx+=fx;b.vy+=fy;}
+    this.edges.forEach(e=>{const a=this.byId[e.source],b=this.byId[e.target];if(!a||!b)return;
+      const dx=b.x-a.x,dy=b.y-a.y,d=Math.sqrt(dx*dx+dy*dy)||0.01,tgt=185-62*(e.confidence||e.weight||0.5),
+      f=(d-tgt)*0.035,fx=f*dx/d,fy=f*dy/d;a.vx+=fx;a.vy+=fy;b.vx-=fx;b.vy-=fy;});
+    nodes.forEach(nd=>{if(nd.fx!=null){nd.x=nd.fx;nd.y=nd.fy;nd.vx=0;nd.vy=0;return;}
+      const gc=this.isCenter(nd)?0.06:0.006,gcy=this.isCenter(nd)?0.06:0.008;
+      nd.vx+=(cx-nd.x)*gc;nd.vy+=(cy-nd.y)*gcy;
       nd.x+=Math.max(-16,Math.min(16,nd.vx));nd.y+=Math.max(-16,Math.min(16,nd.vy));
-      nd.vx*=0.82;nd.vy*=0.82;nd.x=Math.max(60,Math.min(W-60,nd.x));nd.y=Math.max(34,Math.min(H-26,nd.y));});}}
-const NODE_STYLE={query:{c:"#2563eb",r:16},selected:{c:"#059669",r:15},match:{c:"#7c3aed",r:12},
-  rejected:{c:"#94a3b8",r:9},entity:{c:"#2563eb",r:17},person:{c:"#d97706",r:11},parent:{c:"#7c3aed",r:13}};
-const LEGENDS={resolution:[["query","Search subject"],["selected","Selected identity"],["match","Above threshold"],["rejected","Rejected"]],
-  network:[["entity","Resolved entity"],["person","Officer / director"],["parent","Corporate parent"]],
-  transactions:[["entity","Issuer"],["person","Insider (Form 4 filer)"]]};
-function drawGraph(){
-  if(!DATA)return;const g=DATA.graph[GRAPH]||{nodes:[],edges:[]};const svg=$("svg"),W=900,H=520;
-  const nodes=g.nodes.map(n=>({...n})),edges=g.edges;
-  $("legend").innerHTML=(LEGENDS[GRAPH]||[]).map(([k,l])=>`<span><i style="background:${NODE_STYLE[k].c}"></i>${esc(l)}</span>`).join("");
-  if(!nodes.length){svg.innerHTML=`<text x="${W/2}" y="${H/2}" text-anchor="middle" fill="#8b94a3" font-size="13">${GRAPH==="transactions"?esc(DATA.transactions.note||"No transaction data."):"No graph data."}</text>`;
-    $("side").innerHTML=`<div class="empty">Nothing to inspect.</div>`;renderGraphDetail();return;}
-  layout(nodes,edges,W,H);const pos=Object.fromEntries(nodes.map(n=>[n.id,n]));
-  const edgeSvg=edges.map(e=>{const a=pos[e.source],b=pos[e.target];if(!a||!b)return"";
-    const w=1+(e.weight||0.3)*2.4;const col=e.kind==="transaction"?(e.direction==="acquired"?"#05966988":"#ea580c88"):"#cbd2dc";
-    return `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="${col}" stroke-width="${w}"/>`;}).join("");
-  const nodeSvg=nodes.map(n=>{const st=NODE_STYLE[n.type]||{c:"#94a3b8",r:10};
-    const label=n.label.length>26?n.label.slice(0,25)+"…":n.label;
-    return `<g class="node" onclick="selectNode('${esc(n.id)}')">
-      <circle cx="${n.x}" cy="${n.y}" r="${st.r}" fill="${st.c}" stroke="${SELECTED===n.id?"#141a24":"#fff"}" stroke-width="${SELECTED===n.id?2.5:2}"/>
-      <text x="${n.x}" y="${n.y+st.r+13}" text-anchor="middle">${esc(label)}</text></g>`;}).join("");
-  svg.innerHTML=edgeSvg+nodeSvg;
-  if(SELECTED)renderSide(nodes.find(n=>n.id===SELECTED));else $("side").innerHTML=`<div class="empty">Select a node to inspect it.</div>`;
-  renderGraphDetail();
-}
-function selectNode(id){SELECTED=id;drawGraph();}
-function renderSide(n){
-  if(!n){$("side").innerHTML=`<div class="empty">Select a node.</div>`;return;}
-  const g=DATA.graph[GRAPH];const linked=g.edges.filter(e=>e.source===n.id||e.target===n.id);
-  let h=`<div style="font-weight:600;margin-bottom:9px">${esc(n.label)}</div><div class="kv">
-    <div>Type</div><div>${esc(n.type)}</div>${n.source?`<div>Source</div><div>${esc(n.source)}</div>`:""}
-    ${n.confidence!=null?`<div>Confidence</div><div>${n.confidence.toFixed(2)}<div class="bar"><i style="width:${Math.round(n.confidence*100)}%"></i></div></div>`:""}
-    ${n.detail?`<div>Detail</div><div class="dim">${esc(n.detail)}</div>`:""}</div>`;
-  if(n.breakdown&&Object.keys(n.breakdown).length){h+=`<div style="margin-top:13px"><h2>Match features</h2><div class="kv">`+
-    Object.entries(n.breakdown).map(([k,v])=>`<div>${esc(k)}</div><div>${v.toFixed(2)}<div class="bar"><i style="width:${Math.round(v*100)}%"></i></div></div>`).join("")+`</div></div>`;}
-  const tx=linked.find(e=>e.kind==="transaction");
-  if(tx){h+=`<div style="margin-top:13px"><h2>Filed transactions</h2><div class="kv">
-    <div>Count</div><div>${tx.count}</div><div>Shares</div><div>${num(tx.shares)}</div>
-    <div>Acquired</div><div>${money(tx.acquired_value)}</div><div>Disposed</div><div>${money(tx.disposed_value)}</div></div></div>`;}
-  h+=`<div class="dim" style="margin-top:13px;font-size:12px">${linked.length} connection(s)</div>`;$("side").innerHTML=h;
-}
+      nd.vx*=0.82;nd.vy*=0.82;nd.x=Math.max(40,Math.min(this.W-40,nd.x));nd.y=Math.max(28,Math.min(this.H-28,nd.y));});
+    this.updatePositions();this.alpha*=0.98;
+    if(this.alpha>0.03||this.drag)this.raf=requestAnimationFrame(()=>this.tick());else this.raf=null;},
+
+  reheat(a){this.alpha=Math.max(this.alpha,a);if(!this.raf)this.raf=requestAnimationFrame(()=>this.tick());},
+
+  updatePositions(){this.nodes.forEach(n=>{const st=nstyle(n.type);
+    n._c.setAttribute("cx",n.x);n._c.setAttribute("cy",n.y);
+    n._t.setAttribute("x",n.x);n._t.setAttribute("y",n.y+st.r+13);});
+    this.edges.forEach(e=>{const a=this.byId[e.source],b=this.byId[e.target];if(!a||!b)return;
+      e._line.setAttribute("x1",a.x);e._line.setAttribute("y1",a.y);e._line.setAttribute("x2",b.x);e._line.setAttribute("y2",b.y);});
+    if(this.selEdge!=null){const e=this.edges[this.selEdge],a=this.byId[e.source],b=this.byId[e.target];
+      this.edgeLabel.setAttribute("x",(a.x+b.x)/2);this.edgeLabel.setAttribute("y",(a.y+b.y)/2-5);
+      this.edgeLabel.textContent=e.relationship||e.label||"";}else if(this.edgeLabel)this.edgeLabel.textContent="";},
+
+  updateStrokes(){this.nodes.forEach(n=>{const sel=n.id===this.selNode;
+    n._c.setAttribute("stroke",sel?"#141a24":"#fff");n._c.setAttribute("stroke-width",sel?3:2);});},
+
+  applyEmphasis(){const focus=this.hoverId||this.selNode;
+    this.nodes.forEach(n=>n._g&&n._g.classList.remove("dim-el"));
+    this.edges.forEach(e=>e._line&&e._line.classList.remove("dim-el"));
+    if(this.selEdge!=null){const e=this.edges[this.selEdge],keep=new Set([e.source,e.target]);
+      this.nodes.forEach(n=>{if(!keep.has(n.id))n._g.classList.add("dim-el");});
+      this.edges.forEach((x,i)=>{if(i!==this.selEdge)x._line.classList.add("dim-el");});return;}
+    if(focus){const keep=new Set([focus]);
+      this.edges.forEach(e=>{if(e.source===focus||e.target===focus){keep.add(e.source);keep.add(e.target);}});
+      this.nodes.forEach(n=>{if(!keep.has(n.id))n._g.classList.add("dim-el");});
+      this.edges.forEach(e=>{if(!(e.source===focus||e.target===focus))e._line.classList.add("dim-el");});}},
+
+  updateLegend(){const types=[...new Set(this.nodes.map(n=>n.type))];
+    $("legend").innerHTML=types.map(t=>{const st=nstyle(t);return `<span><i style="background:${st.c}"></i>${esc(st.l||t)}</span>`;}).join("");},
+
+  applyTransform(){this.vp&&this.vp.setAttribute("transform",`translate(${this.tx} ${this.ty}) scale(${this.k})`);
+    $("zoomTip").textContent=Math.round(this.k*100)+"%";},
+  worldPt(e){const p=this.svg.createSVGPoint();p.x=e.clientX;p.y=e.clientY;return p.matrixTransform(this.vp.getScreenCTM().inverse());},
+  viewBoxPt(e){const p=this.svg.createSVGPoint();p.x=e.clientX;p.y=e.clientY;return p.matrixTransform(this.svg.getScreenCTM().inverse());},
+  zoomAround(px,py,f){const gx=(px-this.tx)/this.k,gy=(py-this.ty)/this.k;
+    this.k=Math.max(0.3,Math.min(3.5,this.k*f));this.tx=px-gx*this.k;this.ty=py-gy*this.k;this.applyTransform();},
+  onWheel(e){if(!this.vp)return;e.preventDefault();const p=this.viewBoxPt(e);this.zoomAround(p.x,p.y,e.deltaY<0?1.12:0.89);},
+  zoomBy(f){this.zoomAround(450,260,f);},
+  reset(){this.k=1;this.tx=0;this.ty=0;this.applyTransform();this.reheat(0.4);},
+
+  panStart(e){this.pan={p0:this.viewBoxPt(e),tx0:this.tx,ty0:this.ty};this.svg.classList.add("panning");},
+  dragStart(n,e){e.stopPropagation();const w=this.worldPt(e);n.fx=w.x;n.fy=w.y;
+    this.drag={node:n,moved:false,downX:e.clientX,downY:e.clientY};this.reheat(0.5);},
+  onMove(e){if(this.drag){const w=this.worldPt(e);this.drag.node.fx=w.x;this.drag.node.fy=w.y;
+      if(Math.hypot(e.clientX-this.drag.downX,e.clientY-this.drag.downY)>4)this.drag.moved=true;this.reheat(0.25);}
+    else if(this.pan){const p=this.viewBoxPt(e);this.tx=this.pan.tx0+(p.x-this.pan.p0.x);this.ty=this.pan.ty0+(p.y-this.pan.p0.y);this.applyTransform();}},
+  onUp(){if(this.drag){const n=this.drag.node;
+      if(!this.drag.moved){n.fx=n.fy=null;this.selectNode(n.id);}
+      else{n.pinned=true;n._g.classList.add("pinned");}this.drag=null;}
+    if(this.pan){this.pan=null;this.svg.classList.remove("panning");}},
+  unpin(n){n.fx=n.fy=null;n.pinned=false;n._g.classList.remove("pinned");this.reheat(0.4);},
+
+  selectNode(id){this.selEdge=null;this.selNode=id;this.hoverId=null;
+    this.updateStrokes();this.applyEmphasis();this.renderNodePanel(this.byId[id]);},
+  selectEdge(i){this.selNode=null;this.selEdge=i;this.hoverId=null;
+    this.updateStrokes();this.applyEmphasis();this.renderEdgePanel(i);},
+
+  hasMore(id){if(!this.expandable)return false;const have=new Set(this.nodes.map(n=>n.id));
+    return DATA.graph.network_full.edges.some(e=>(e.source===id&&!have.has(e.target))||(e.target===id&&!have.has(e.source)));},
+  expand(id){if(!this.expandable)return;const full=DATA.graph.network_full;const have=new Set(this.nodes.map(n=>n.id));
+    const src=this.byId[id];
+    full.edges.forEach(e=>{if(e.source!==id&&e.target!==id)return;
+      [e.source,e.target].forEach(nid=>{if(!have.has(nid)){const fn=full.nodes.find(x=>x.id===nid);
+        if(fn){const nn={...fn,x:src.x+(Math.random()*80-40),y:src.y+(Math.random()*80-40),vx:0,vy:0};
+          this.nodes.push(nn);this.byId[nid]=nn;have.add(nid);}}});
+      if(!this.edges.some(x=>x.source===e.source&&x.target===e.target))this.edges.push({...e});});
+    this.renderDom();this.updateLegend();this.reheat(0.8);this.selectNode(id);},
+
+  renderNodePanel(n){if(!n)return;const st=nstyle(n.type);
+    const linked=this.edges.filter(e=>e.source===n.id||e.target===n.id);
+    let h=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+      <span style="width:12px;height:12px;border-radius:50%;background:${st.c};display:inline-block"></span>
+      <b style="font-size:14px">${esc(n.label)}</b></div>
+      <div class="kv"><div>Type</div><div>${esc(st.l||n.type)}</div>
+      ${n.detail?`<div>Detail</div><div class="dim">${esc(n.detail)}</div>`:""}
+      ${n.source?`<div>Source</div><div>${esc(n.source)}</div>`:""}
+      ${n.confidence!=null?`<div>Confidence</div><div>${n.confidence.toFixed(2)}<div class="bar"><i style="width:${Math.round(n.confidence*100)}%"></i></div></div>`:""}</div>`;
+    if(n.breakdown&&Object.keys(n.breakdown).length){h+=`<div style="margin-top:12px"><h2>Match features</h2><div class="kv">`+
+      Object.entries(n.breakdown).map(([k,v])=>`<div>${esc(k)}</div><div>${v.toFixed(2)}<div class="bar"><i style="width:${Math.round(v*100)}%"></i></div></div>`).join("")+`</div></div>`;}
+    const tx=linked.find(e=>e.kind==="transaction");
+    if(tx){h+=`<div style="margin-top:12px"><h2>Filed transactions</h2><div class="kv">
+      <div>Count</div><div>${tx.count}</div><div>Acquired</div><div>${money(tx.acquired_value)}</div>
+      <div>Disposed</div><div>${money(tx.disposed_value)}</div></div></div>`;}
+    if(linked.length){h+=`<div style="margin-top:12px"><h2>Connections (${linked.length})</h2><div class="neigh">`+
+      linked.map(e=>{const other=e.source===n.id?e.target:e.source,on=this.byId[other];
+        return `<a onclick="Graph.selectNode('${esc(other)}')">${esc(on?on.label:other)} <span class="dim">· ${esc(e.relationship||e.label||"")}</span></a>`;}).join("")+`</div></div>`;}
+    h+=`<div style="margin-top:6px">`;
+    if(this.hasMore(n.id))h+=`<button class="btn alt" onclick="Graph.expand('${esc(n.id)}')">+ Expand connections</button> `;
+    h+=`<button class="btn" id="insightBtn" onclick="Graph.runInsight()">&#10022; AI insight</button></div><div id="insightBox"></div>`;
+    $("side").innerHTML=h;},
+
+  renderEdgePanel(i){const e=this.edges[i],s=this.byId[e.source],t=this.byId[e.target];
+    $("side").innerHTML=`<h2>Connection</h2>
+      <div class="conn"><b>${esc(s.label)}</b><span class="rel">${esc(e.relationship||e.label||"linked")}</span><b>${esc(t.label)}</b></div>
+      <div class="kv">${e.confidence!=null?`<div>Confidence</div><div>${(+e.confidence).toFixed(2)}<div class="bar"><i style="width:${Math.round(e.confidence*100)}%"></i></div></div>`:""}
+      ${e.description?`<div>Known facts</div><div class="dim">${esc(e.description)}</div>`:""}</div>
+      <button class="btn" id="insightBtn" onclick="Graph.runInsight()">&#10022; AI insight on this connection</button>
+      <div id="insightBox"></div>`;},
+
+  buildPayload(){const subj=DATA.supplier&&DATA.supplier.name,rl=DATA.risk&&DATA.risk.level;
+    if(this.selEdge!=null){const e=this.edges[this.selEdge],s=this.byId[e.source],t=this.byId[e.target];
+      return {kind:"edge",subject:subj,risk_level:rl,source_label:s.label,source_type:s.type,
+        target_label:t.label,target_type:t.type,relationship:e.relationship||e.label,
+        confidence:e.confidence!=null?+e.confidence:(e.weight!=null?+e.weight:null),description:e.description};}
+    if(this.selNode){const n=this.byId[this.selNode];
+      return {kind:"node",subject:subj,risk_level:rl,node_label:n.label,node_type:n.type,node_detail:n.detail};}
+    return null;},
+
+  async runInsight(){const payload=this.buildPayload();if(!payload)return;
+    const btn=$("insightBtn"),box=$("insightBox");if(btn){btn.disabled=true;btn.textContent="Generating…";}
+    try{const r=await fetch("/api/v1/graph/insight",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+      const d=await r.json();
+      box.innerHTML=`<div class="insight"><div class="tag">&#10022; AI insight</div>${esc(d.insight)}<div class="src">${esc(d.generated_by||"")}</div></div>`;
+    }catch(err){box.innerHTML=`<div class="insight">Insight failed: ${esc(err.message)}</div>`;}
+    finally{if(btn){btn.disabled=false;btn.innerHTML="&#10022; AI insight";}}},
+};
+
+function setGraph(kind){GRAPH=kind;
+  ["resolution","network","transactions"].forEach((k,i)=>$("gt"+i).classList.toggle("on",k===kind));
+  Graph.load(kind);renderGraphDetail();
+  $("graphHint").innerHTML=kind==="network"
+    ? "Drag nodes to arrange &middot; scroll to zoom &middot; drag background to pan &middot; click a node then <b>Expand connections</b> to reveal more, or click any connection line for an AI insight."
+    : "Drag nodes to arrange &middot; scroll to zoom &middot; drag the background to pan &middot; click a node or connection to inspect it.";}
+
 function renderGraphDetail(){
   const d=DATA;
   if(GRAPH==="resolution"){const er=d.entity_resolution;$("detailTitle").textContent="Why this identity was selected";
@@ -661,7 +845,7 @@ function renderGraphDetail(){
           <td>${num(x.shares)}</td><td>${money(x.value)}</td></tr>`).join("")}</table>
       <div class="dim" style="margin-top:9px;font-size:12px">Reported securities transactions filed on SEC Form 4 — actual filings, not inferred payment flows.</div>`;}
 }
-setType("organization");loadSamples();
+setType("organization");loadSamples();Graph.init();
 </script>
 </body>
 </html>

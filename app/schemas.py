@@ -29,6 +29,27 @@ class InvestigationRequest(BaseModel):
     )
 
 
+class GraphInsightRequest(BaseModel):
+    """Facts about one graph edge or node, for the AI insight agent."""
+
+    kind: Literal["edge", "node"] = "edge"
+    subject: str | None = None
+    risk_level: str | None = None
+    # edge
+    source_label: str | None = None
+    source_type: str | None = None
+    target_label: str | None = None
+    target_type: str | None = None
+    relationship: str | None = None
+    confidence: float | None = None
+    description: str | None = None
+    # node
+    node_label: str | None = None
+    node_type: str | None = None
+    node_detail: str | None = None
+    context: str | None = Field(None, max_length=2000)
+
+
 class Supplier(BaseModel):
     name: str
     verified: bool

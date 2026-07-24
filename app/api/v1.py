@@ -11,9 +11,10 @@ from app import db as database
 from app import demo
 from app.models import Investigation
 from app.pipeline import investigate
+from app.agent.insight import connection_insight
 from app.resolution.embeddings import active_backend
 from app.risk.taxonomy import category_labels
-from app.schemas import InvestigationRequest, InvestigationResponse
+from app.schemas import GraphInsightRequest, InvestigationRequest, InvestigationResponse
 from app.sources import ofac
 
 log = logging.getLogger(__name__)
@@ -90,6 +91,12 @@ async def refresh_ofac() -> dict:
 async def risk_categories() -> dict:
     """The five top-level categories the dashboard filters on."""
     return {"categories": category_labels()}
+
+
+@router.post("/graph/insight", summary="AI insight for a graph connection or node")
+async def graph_insight(request: GraphInsightRequest) -> dict:
+    """Explain a specific network connection, grounded in the supplied facts."""
+    return await connection_insight(request.model_dump())
 
 
 @router.get("/demo/subjects", summary="Demo subjects (offline sample dataset)")

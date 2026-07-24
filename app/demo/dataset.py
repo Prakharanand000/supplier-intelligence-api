@@ -138,6 +138,83 @@ ARTICLES: list[dict] = [
 # --------------------------------------------------------------------------
 # Subject fixtures - identity, sanctions, litigation, ownership, transactions.
 # --------------------------------------------------------------------------
+# --------------------------------------------------------------------------
+# Cross-entity connection graph. Persons sit on multiple boards, holding
+# companies own several subsidiaries, and shared officers link the three
+# subjects to each other - the multi-hop network a Neo4j-style investigation
+# would surface. Every edge carries a description so a connection can be
+# explained by the AI insight agent.
+# --------------------------------------------------------------------------
+GRAPH_NODES: dict[str, dict] = {
+    "Northwind Trading Co.": {"type": "entity", "detail": "Commodities trader (US)"},
+    "Meridian Capital Partners": {"type": "entity", "detail": "Asset manager (US)"},
+    "Halcyon Logistics Ltd": {"type": "entity", "detail": "Logistics operator (UK)"},
+
+    "Northwind Holdings B.V.": {"type": "holding", "detail": "Ultimate parent (Netherlands)"},
+    "Northwind Trading Cayman Ltd": {"type": "holding", "detail": "Direct parent (Cayman Islands)"},
+    "Halcyon Group Holdings Ltd": {"type": "holding", "detail": "Ultimate parent (UK)"},
+    "Coastal Nominees Ltd": {"type": "holding", "detail": "Direct parent (Jersey)"},
+
+    "Grace Halloran": {"type": "person", "detail": "Chief Executive Officer, Northwind"},
+    "Peter Vance": {"type": "person", "detail": "Chief Financial Officer, Northwind"},
+    "Marcus Reed": {"type": "person", "detail": "VP Trading, Northwind"},
+    "Julian Frost": {"type": "person", "detail": "Founder, Meridian (on leave)"},
+    "Anita Bose": {"type": "person", "detail": "Chief Compliance Officer, Meridian"},
+
+    "Aurora Commodities Ltd": {"type": "company", "detail": "External firm (UK)"},
+    "Baltic Shipping AS": {"type": "company", "detail": "External firm (Norway)"},
+    "Sterling Advisory Group": {"type": "company", "detail": "External firm (US)"},
+    "Vance Family Office": {"type": "trust", "detail": "Private investment vehicle"},
+    "Frost Family Trust": {"type": "trust", "detail": "Discretionary trust"},
+}
+
+GRAPH_EDGES: list[dict] = [
+    # Northwind core
+    {"source": "Grace Halloran", "target": "Northwind Trading Co.", "rel": "Chief Executive Officer",
+     "confidence": 0.86, "description": "Grace Halloran is CEO of Northwind Trading Co. and its most senior insider seller in the last year."},
+    {"source": "Peter Vance", "target": "Northwind Trading Co.", "rel": "Chief Financial Officer",
+     "confidence": 0.83, "description": "Peter Vance is CFO of Northwind Trading Co.; he signed the filings tied to the AML enforcement review."},
+    {"source": "Marcus Reed", "target": "Northwind Trading Co.", "rel": "VP Trading",
+     "confidence": 0.7, "description": "Marcus Reed runs trading at Northwind and holds options exercised earlier this year."},
+    {"source": "Northwind Holdings B.V.", "target": "Northwind Trading Co.", "rel": "Ultimate parent",
+     "confidence": 0.88, "description": "Northwind Holdings B.V., a Dutch entity, is the ultimate parent of Northwind Trading Co."},
+    {"source": "Northwind Trading Cayman Ltd", "target": "Northwind Trading Co.", "rel": "Direct parent",
+     "confidence": 0.84, "description": "Northwind Trading Cayman Ltd is the direct parent, adding an offshore layer to the ownership chain."},
+    {"source": "Northwind Trading Cayman Ltd", "target": "Northwind Holdings B.V.", "rel": "Subsidiary of",
+     "confidence": 0.88, "description": "The Cayman entity is itself a subsidiary of Northwind Holdings B.V., forming a two-tier offshore structure."},
+
+    # Cross-entity links via shared people / parents
+    {"source": "Grace Halloran", "target": "Aurora Commodities Ltd", "rel": "Non-executive director",
+     "confidence": 0.72, "description": "Grace Halloran also sits on the board of Aurora Commodities Ltd, an unrelated commodities firm."},
+    {"source": "Peter Vance", "target": "Meridian Capital Partners", "rel": "Advisory board member",
+     "confidence": 0.66, "description": "Peter Vance advises Meridian Capital Partners, creating a direct link between two investigated entities."},
+    {"source": "Peter Vance", "target": "Vance Family Office", "rel": "Principal",
+     "confidence": 0.8, "description": "Peter Vance controls the Vance Family Office, a private vehicle holding personal investments."},
+    {"source": "Northwind Holdings B.V.", "target": "Baltic Shipping AS", "rel": "Owns 60%",
+     "confidence": 0.8, "description": "Northwind's Dutch parent owns a controlling 60% stake in Baltic Shipping AS."},
+    {"source": "Marcus Reed", "target": "Halcyon Logistics Ltd", "rel": "Board observer",
+     "confidence": 0.6, "description": "Marcus Reed is a board observer at Halcyon Logistics Ltd, linking Northwind to a third investigated entity."},
+
+    # Meridian
+    {"source": "Julian Frost", "target": "Meridian Capital Partners", "rel": "Founder",
+     "confidence": 0.8, "description": "Julian Frost founded Meridian Capital Partners and faces securities-fraud charges."},
+    {"source": "Anita Bose", "target": "Meridian Capital Partners", "rel": "Chief Compliance Officer",
+     "confidence": 0.82, "description": "Anita Bose is Meridian's Chief Compliance Officer."},
+    {"source": "Julian Frost", "target": "Frost Family Trust", "rel": "Settlor",
+     "confidence": 0.78, "description": "Julian Frost is the settlor of the Frost Family Trust, which holds part of his Meridian stake."},
+    {"source": "Julian Frost", "target": "Sterling Advisory Group", "rel": "Non-executive director",
+     "confidence": 0.65, "description": "Julian Frost also serves as a director of Sterling Advisory Group."},
+
+    # Halcyon
+    {"source": "Halcyon Group Holdings Ltd", "target": "Halcyon Logistics Ltd", "rel": "Ultimate parent",
+     "confidence": 0.86, "description": "Halcyon Group Holdings Ltd is the ultimate parent of Halcyon Logistics Ltd."},
+    {"source": "Coastal Nominees Ltd", "target": "Halcyon Logistics Ltd", "rel": "Direct parent",
+     "confidence": 0.78, "description": "Coastal Nominees Ltd, a Jersey entity, is the direct parent of Halcyon Logistics Ltd."},
+    {"source": "Coastal Nominees Ltd", "target": "Halcyon Group Holdings Ltd", "rel": "Subsidiary of",
+     "confidence": 0.8, "description": "Coastal Nominees Ltd is a subsidiary of Halcyon Group Holdings Ltd."},
+]
+
+
 SUBJECTS: dict[str, dict] = {
     "northwind": {
         "name": "Northwind Trading Co.",

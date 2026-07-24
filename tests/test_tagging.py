@@ -135,6 +135,56 @@ def test_list_subjects_matches_dataset():
         assert s["article_count"] > 0
 
 
+# --- connection network graph ----------------------------------------------
+def test_demo_network_is_multihop_and_cross_entity():
+    net = build_investigation("northwind")["graph"]["network"]
+    ids = {n["id"] for n in net["nodes"]}
+    assert len(net["nodes"]) >= 8  # not a flat star
+    # a person links to an external firm (2-hop), not just to the subject
+    types = {n["id"]: n["type"] for n in net["nodes"]}
+    person_to_company = any(
+        types.get(e["source"]) == "person" and types.get(e["target"]) == "company"
+        for e in net["edges"]
+    )
+    assert person_to_company
+    # a shared officer links Northwind to another investigated entity
+    assert "meridian-capital-partners" in ids or "halcyon-logistics-ltd" in ids
+
+
+def test_network_edges_carry_facts_for_insight():
+    net = build_investigation("meridian")["graph"]["network"]
+    assert net["edges"]
+    for e in net["edges"]:
+        assert e["relationship"] and e["description"]
+        assert 0 <= e["confidence"] <= 1
+
+
+def test_full_graph_is_superset_of_subgraph():
+    g = build_investigation("halcyon")["graph"]
+    sub_ids = {n["id"] for n in g["network"]["nodes"]}
+    full_ids = {n["id"] for n in g["network_full"]["nodes"]}
+    assert sub_ids <= full_ids
+    assert len(full_ids) > len(sub_ids)  # room to expand
+
+
+def test_connection_insight_fallback_names_both_parties():
+    import asyncio
+
+    from app.agent.insight import connection_insight
+
+    payload = {
+        "kind": "edge", "subject": "Northwind Trading Co.", "risk_level": "high",
+        "source_label": "Peter Vance", "source_type": "person",
+        "target_label": "Meridian Capital Partners", "target_type": "entity",
+        "relationship": "Advisory board member", "confidence": 0.66,
+        "description": "Peter Vance advises Meridian Capital Partners.",
+    }
+    result = asyncio.run(connection_insight(payload))
+    assert "Peter Vance" in result["insight"]
+    assert "Meridian Capital Partners" in result["insight"]
+    assert "deterministic" in result["generated_by"]  # no API key in test env
+
+
 # --- market-wire noise -----------------------------------------------------
 def test_analyst_wire_copy_is_not_adverse_media():
     """The bank is the analyst here, not the subject of an allegation."""

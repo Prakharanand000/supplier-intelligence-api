@@ -6,12 +6,63 @@ the same shape and passes through the same scoring logic as a live run.
 
 from __future__ import annotations
 
+import re
+from collections import defaultdict
 from typing import Any
 
-from app.demo.dataset import ARTICLES, SUBJECTS
+from app.demo.dataset import ARTICLES, GRAPH_EDGES, GRAPH_NODES, SUBJECTS
 from app.risk import bias
 from app.risk.engine import evaluate, recommendation
 from app.risk.taxonomy import categories_for
+
+
+def _slug(label: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "-", label.lower()).strip("-")
+
+
+def _node(label: str, center: str) -> dict:
+    meta = GRAPH_NODES[label]
+    ntype = "entity" if label == center else meta["type"]
+    return {"id": _slug(label), "label": label, "type": ntype,
+            "detail": meta.get("detail"), "center": label == center}
+
+
+def _edge(e: dict) -> dict:
+    return {"source": _slug(e["source"]), "target": _slug(e["target"]),
+            "label": e["rel"], "relationship": e["rel"], "confidence": e["confidence"],
+            "description": e["description"], "kind": "connection"}
+
+
+def _full_graph() -> dict[str, Any]:
+    return {
+        "nodes": [{"id": _slug(l), "label": l, "type": m["type"], "detail": m.get("detail")}
+                  for l, m in GRAPH_NODES.items()],
+        "edges": [_edge(e) for e in GRAPH_EDGES],
+    }
+
+
+def _connection_subgraph(center: str, hops: int = 2, limit: int = 16) -> dict[str, Any]:
+    """Breadth-first neighbourhood around the subject, capped for readability."""
+    adj: dict[str, list[str]] = defaultdict(list)
+    for e in GRAPH_EDGES:
+        adj[e["source"]].append(e["target"])
+        adj[e["target"]].append(e["source"])
+
+    seen = {center}
+    frontier = [center]
+    for _ in range(hops):
+        nxt = []
+        for node in frontier:
+            for nb in adj[node]:
+                if nb not in seen and len(seen) < limit:
+                    seen.add(nb)
+                    nxt.append(nb)
+        frontier = nxt
+
+    nodes = [_node(label, center) for label in seen]
+    edges = [_edge(e) for e in GRAPH_EDGES
+             if e["source"] in seen and e["target"] in seen]
+    return {"nodes": nodes, "edges": edges}
 
 
 def list_subjects() -> list[dict]:
@@ -274,7 +325,13 @@ def build_investigation(sid: str) -> dict[str, Any]:
         "media_summary": media_summary,
         "litigation": litigation,
         "transactions": transactions,
-        "graph": _graphs(meta, ownership, transactions),
+        "graph": {
+            **_graphs(meta, ownership, transactions),
+            # Rich multi-hop connection graph replaces the flat ownership star:
+            # persons linking to other firms, firms to parents, cross-entity links.
+            "network": _connection_subgraph(meta["name"]),
+            "network_full": _full_graph(),
+        },
         "risk": risk,
         "evidence": _evidence(articles, litigation, ownership, meta),
         "agent_summary": agent_summary,

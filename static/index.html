@@ -7,7 +7,8 @@
 <style>
   :root{
     --bg:#ffffff; --soft:#f5f7fa; --panel:#ffffff; --line:#e6e9ee;
-    --ink:#141a24; --muted:#5c6675; --dim:#8b94a3; --accent:#2563eb;
+    --ink:#111111; --muted:#3f4650; --dim:#6b7280; --accent:#2563eb;
+    --hdr:#0d1424; --hdr-line:#1e2942;
     --accent-soft:#eaf1ff;
     --low:#059669; --medium:#d97706; --high:#ea580c; --critical:#dc2626;
     --factual:#059669; --mixed:#d97706; --polarized:#dc2626;
@@ -15,7 +16,7 @@
     --shadow-lg:0 4px 12px rgba(16,24,40,.08);
   }
   *{box-sizing:border-box}
-  html,body{background:var(--bg)}
+  html,body{background:var(--bg);overflow-x:hidden}
   body{margin:0;color:var(--ink);
     font:14.5px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,ui-sans-serif,sans-serif;
     -webkit-font-smoothing:antialiased}
@@ -23,20 +24,25 @@
   h2{font-size:11.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--dim);
      margin:0 0 12px;font-weight:600}
 
-  /* header + stepper */
-  header{display:flex;align-items:center;gap:16px;padding:0 24px;height:60px;
-    border-bottom:1px solid var(--line);background:#fff;position:sticky;top:0;z-index:50}
-  .brand{display:flex;align-items:center;gap:10px;font-size:15px;letter-spacing:-.01em}
+  /* header + stepper (dark, full width) */
+  header{display:flex;align-items:center;gap:16px;padding:0 26px;height:60px;
+    border-bottom:1px solid var(--hdr-line);background:var(--hdr);position:sticky;top:0;z-index:50}
+  .brand{display:flex;align-items:center;gap:10px;font-size:15px;letter-spacing:-.01em;color:#fff}
   .logo{display:grid;place-items:center;line-height:0}
-  .brand small{color:var(--dim);font-weight:400;font-size:11px;display:block}
+  .brand small{color:#9fb0cc;font-weight:400;font-size:11px;display:block}
+  header .step{color:#9fb0cc}
+  header .step .dot{background:#1a2540;color:#9fb0cc;border-color:#2a3550}
+  header .step.active{background:#1e2942;color:#fff;border-color:#3a4a6a}
+  header .step.active .dot{background:var(--accent);color:#fff;border-color:var(--accent)}
+  header .step.done{color:#cdd8ec} header .step.done .dot{background:var(--low);color:#fff;border-color:var(--low)}
 
-  /* hero + world map */
-  .hero{background:linear-gradient(160deg,#0d1424,#131c31 60%,#1a2540);border-radius:16px;
-    padding:26px 28px;margin-bottom:18px;color:#eaf0fb;position:relative;overflow:hidden;
-    box-shadow:0 10px 30px rgba(16,24,40,.14)}
+  /* hero + world map (full-bleed, flush under the header) */
+  .hero{background:linear-gradient(160deg,#0d1424,#131c31 60%,#1a2540);
+    margin-left:calc(50% - 50vw);margin-right:calc(50% - 50vw);margin-top:-26px;
+    padding:40px 26px 42px;margin-bottom:22px;color:#eaf0fb;position:relative;overflow:hidden}
   .hero h1{margin:0 0 6px;font-size:22px;font-weight:700;letter-spacing:-.02em}
   .hero p{margin:0;color:#9fb0cc;font-size:13.5px;max-width:520px}
-  .hero .wrap{display:grid;grid-template-columns:1fr 1.15fr;gap:18px;align-items:center}
+  .hero .wrap{max-width:1280px;margin:0 auto;display:grid;grid-template-columns:1fr 1.15fr;gap:18px;align-items:center}
   .hero .stats{display:flex;gap:22px;margin-top:16px;flex-wrap:wrap}
   .hero .stat b{display:block;font-size:22px;font-weight:700}
   .hero .stat span{font-size:11.5px;color:#8ba0c2;text-transform:uppercase;letter-spacing:.05em}
@@ -90,6 +96,26 @@
   .code .k{color:#7dd3fc} .code .s{color:#a5f3b0} .code .c{color:#7b8aa8}
   .try{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
   .try input{max-width:280px}
+
+  /* MCP / API quick-start steps */
+  .steps3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  @media(max-width:900px){.steps3{grid-template-columns:1fr}}
+  .stepcard{background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden;
+    display:flex;flex-direction:column;box-shadow:var(--shadow)}
+  .stepcard .shot{background:#0f1420;padding:0;line-height:0}
+  .stepcard .shot svg{width:100%;height:auto;display:block}
+  .stepcard .body{padding:14px 15px;display:flex;flex-direction:column;gap:8px;flex:1}
+  .stepnum{display:inline-flex;align-items:center;gap:8px;font-weight:700;font-size:13px}
+  .stepnum b{width:22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;
+    display:grid;place-items:center;font-size:12px}
+  .stepcard p{margin:0;font-size:12.5px;color:var(--muted);line-height:1.5}
+  .ptabs{display:flex;gap:6px;margin:2px 0 4px}
+  .ptabs button{background:var(--soft);border:1px solid var(--line);color:var(--muted);
+    padding:4px 10px;border-radius:7px;cursor:pointer;font:inherit;font-size:11.5px}
+  .ptabs button.on{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:600}
+  .stepcard .code{font-size:11px;padding:11px 12px}
+  .prompt{background:var(--accent-soft);border:1px solid #d3e2ff;border-radius:8px;padding:9px 11px;
+    font-size:12.5px;color:#1e40af}
   .steps{display:flex;gap:4px;margin-left:auto}
   .step{display:flex;align-items:center;gap:8px;padding:7px 14px;border-radius:8px;
     font-size:13px;color:var(--dim);cursor:pointer;border:1px solid transparent;background:none}
@@ -359,7 +385,7 @@
       <div class="intake-body">
       <aside class="intake-side">
         <div class="card">
-          <h2>Demo entities</h2>
+          <h2>Watchlist</h2>
           <input id="entSearch" class="search" placeholder="Search organizations / people"
                  oninput="renderEntityList()" autocomplete="off" />
           <div class="subseg" style="margin-top:10px">
@@ -534,8 +560,90 @@
     <div class="card">
       <h2>Programmatic access</h2>
       <p class="lede">Every investigation is a single call that returns one structured JSON
-        intelligence object - ready to feed into an agentic AI platform, a case-management
+        intelligence object, ready to feed into an agentic AI platform, a case-management
         system, or your own risk workflow.</p>
+    </div>
+
+    <div class="card">
+      <h2>Quick start &middot; use it inside an AI agent</h2>
+      <p class="lede" style="margin-bottom:16px">Three steps to give Claude Code, Codex, or any
+        MCP-compatible agent a <b>investigate_supplier</b> tool. The illustrations show what each
+        step looks like.</p>
+      <div class="steps3">
+
+        <div class="stepcard">
+          <div class="shot">
+            <svg viewBox="0 0 320 150">
+              <rect width="320" height="150" fill="#0f1420"/>
+              <rect width="320" height="24" fill="#182033"/>
+              <circle cx="16" cy="12" r="4" fill="#f43f5e"/><circle cx="30" cy="12" r="4" fill="#f59e0b"/><circle cx="44" cy="12" r="4" fill="#22c55e"/>
+              <text x="64" y="16" fill="#7b8aa8" font-size="10" font-family="monospace">terminal</text>
+              <text x="14" y="50" fill="#7dd3fc" font-size="11" font-family="monospace">$ pip install "mcp[cli]" httpx</text>
+              <text x="14" y="74" fill="#a5f3b0" font-size="11" font-family="monospace">$ python mcp_server.py</text>
+              <text x="14" y="98" fill="#9fb0cc" font-size="10.5" font-family="monospace">MCP server "argus" running (stdio)</text>
+              <text x="14" y="118" fill="#9fb0cc" font-size="10.5" font-family="monospace">tool: investigate_supplier ready</text>
+              <rect x="14" y="128" width="7" height="12" fill="#7dd3fc"/>
+            </svg>
+          </div>
+          <div class="body">
+            <span class="stepnum"><b>1</b> Get the MCP server</span>
+            <p>Download <b>mcp_server.py</b> (a tiny wrapper around this API), install the deps and run it.</p>
+            <div class="code" id="qs1"></div>
+            <a class="btn alt" href="/static/mcp_server.py" download style="align-self:flex-start;text-decoration:none">&#8681; Download mcp_server.py</a>
+          </div>
+        </div>
+
+        <div class="stepcard">
+          <div class="shot">
+            <svg viewBox="0 0 320 150">
+              <rect width="320" height="150" fill="#0f1420"/>
+              <rect width="320" height="24" fill="#182033"/>
+              <text x="14" y="16" fill="#7b8aa8" font-size="10" font-family="monospace">.mcp.json</text>
+              <text x="14" y="46" fill="#c9d3e6" font-size="10.5" font-family="monospace">{ "mcpServers": {</text>
+              <text x="26" y="64" fill="#7dd3fc" font-size="10.5" font-family="monospace">"argus": {</text>
+              <text x="38" y="82" fill="#a5f3b0" font-size="10.5" font-family="monospace">"command": "python",</text>
+              <text x="38" y="100" fill="#a5f3b0" font-size="10.5" font-family="monospace">"args": ["mcp_server.py"]</text>
+              <text x="26" y="118" fill="#c9d3e6" font-size="10.5" font-family="monospace">} } }</text>
+              <path d="M232 60 h72 M232 84 h56 M232 108 h64" stroke="#2a3550" stroke-width="6" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="body">
+            <span class="stepnum"><b>2</b> Register it with your agent</span>
+            <div class="ptabs" id="ptabs">
+              <button class="on" data-p="claude" onclick="platformTab('claude')">Claude Code</button>
+              <button data-p="codex" onclick="platformTab('codex')">Codex</button>
+              <button data-p="other" onclick="platformTab('other')">Other</button>
+            </div>
+            <p id="pdesc"></p>
+            <div class="code" id="qs2"></div>
+          </div>
+        </div>
+
+        <div class="stepcard">
+          <div class="shot">
+            <svg viewBox="0 0 320 150">
+              <rect width="320" height="150" fill="#f5f7fa"/>
+              <rect x="120" y="12" width="188" height="26" rx="9" fill="#2563eb"/>
+              <text x="132" y="29" fill="#fff" font-size="10.5">Investigate Cobalt Trade Partners</text>
+              <rect x="12" y="48" width="230" height="42" rx="9" fill="#fff" stroke="#e6e9ee"/>
+              <text x="22" y="64" fill="#6b7280" font-size="9.5" font-family="monospace">&#9881; investigate_supplier(</text>
+              <text x="30" y="78" fill="#111" font-size="9.5" font-family="monospace">name="Cobalt Trade Partners")</text>
+              <rect x="12" y="100" width="260" height="40" rx="9" fill="#e7f6ef" stroke="#bbe6cd"/>
+              <text x="22" y="117" fill="#14532d" font-size="9.5" font-family="monospace">risk: 62 / high · sanctions: none</text>
+              <text x="22" y="131" fill="#14532d" font-size="9.5" font-family="monospace">12 adverse articles · 3 categories</text>
+            </svg>
+          </div>
+          <div class="body">
+            <span class="stepnum"><b>3</b> Ask your agent</span>
+            <p>Just ask in natural language. The agent calls the tool and reasons over the returned
+              JSON, the same object shown in the response contract below.</p>
+            <div class="prompt">&#8220;Investigate Cobalt Trade Partners and tell me if we can onboard them.&#8221;</div>
+            <p class="dim" style="font-size:11.5px">Prefer raw HTTP? Skip the MCP server and call the
+              REST endpoint directly (below) from any language or workflow tool.</p>
+          </div>
+        </div>
+
+      </div>
     </div>
 
     <div class="conn-grid">
@@ -603,7 +711,7 @@ async function loadEntities(){
     SUBJECTS_LIST=d.subjects;
     $("hStatEnt").textContent=SUBJECTS_LIST.length;
     renderEntityList();
-  }catch(e){$("entList").innerHTML='<span class="no">Demo entities unavailable.</span>';}
+  }catch(e){$("entList").innerHTML='<span class="no">Entities unavailable.</span>';}
 }
 function filterEntities(f){ENT_FILTER=f;
   document.querySelectorAll(".subseg button").forEach(b=>b.classList.toggle("on",b.dataset.f===f));
@@ -631,7 +739,7 @@ function renderEntityRail(){
 }
 async function loadDemo(id){
   CURRENT_ID=id;
-  $("status").className="status";$("status").textContent="Loading demo entity...";
+  $("status").className="status";$("status").textContent="Loading entity...";
   try{
     const r=await fetch("/api/v1/demo/investigate/"+id);
     if(!r.ok)throw new Error("not found");
@@ -1195,6 +1303,32 @@ function renderConnectors(){
     esc(JSON.stringify({name:"investigate_supplier",description:"Investigate a supplier, company or person for third-party risk. Returns sanctions, adverse media, litigation, ownership graph and an explainable risk score.",input_schema:{type:"object",properties:{name:{type:"string"},country:{type:"string"},entity_type:{type:"string",enum:["organization","individual"]},date_of_birth:{type:"string"}},required:["name"]}},null,2));
   $("contract").innerHTML=`<table><tr><th>Key</th><th>Contains</th></tr>`+
     CONTRACT.map(([k,v])=>`<tr><td><code style="color:var(--accent)">${esc(k)}</code></td><td class="dim">${esc(v)}</td></tr>`).join("")+`</table>`;
+  // quick-start step 1
+  $("qs1").innerHTML=`<button class="cp" onclick="copyCode('qs1')">copy</button>`+
+    `<span class="c"># install and run the wrapper</span>\n`+
+    `<span class="k">pip install</span> <span class="s">"mcp[cli]"</span> httpx\n`+
+    `ARGUS_URL=<span class="s">${origin}</span> <span class="k">python</span> mcp_server.py`;
+  platformTab("claude");
+}
+const PLATFORMS={
+  claude:{desc:"Run once in your project folder. Claude Code lists it under /mcp and the tool becomes available in chat.",
+    code:o=>`<span class="c"># from your project folder</span>\n`+
+      `<span class="k">claude</span> mcp add argus \\\n  --env ARGUS_URL=<span class="s">${o}</span> \\\n  -- <span class="k">python</span> mcp_server.py\n\n`+
+      `<span class="c"># or commit .mcp.json (shown above) to share it</span>`},
+  codex:{desc:"Add the block to ~/.codex/config.toml, then restart Codex; the tool appears automatically.",
+    code:o=>`<span class="c"># ~/.codex/config.toml</span>\n`+
+      `[mcp_servers.argus]\n`+
+      `command = <span class="s">"python"</span>\n`+
+      `args = [<span class="s">"mcp_server.py"</span>]\n`+
+      `env = { ARGUS_URL = <span class="s">"${o}"</span> }`},
+  other:{desc:"Most MCP clients accept this stdio config. Point ARGUS_URL at this host.",
+    code:o=>esc(JSON.stringify({mcpServers:{argus:{command:"python",args:["mcp_server.py"],env:{ARGUS_URL:o}}}},null,2))},
+};
+function platformTab(p){
+  document.querySelectorAll("#ptabs button").forEach(b=>b.classList.toggle("on",b.dataset.p===p));
+  const o=location.origin,spec=PLATFORMS[p];
+  $("pdesc").textContent=spec.desc;
+  $("qs2").innerHTML=`<button class="cp" onclick="copyCode('qs2')">copy</button>`+spec.code(o);
 }
 function copyCode(id){const t=$(id).innerText.replace(/^copy/,"").trim();
   navigator.clipboard&&navigator.clipboard.writeText(t);

@@ -10,11 +10,10 @@ never a wall of prose.
 The original flow chains six LLM+web-search stages (frame -> five specialist
 seats + synthesis -> adversarial review -> evidence audit -> board vote). Here
 the whole board runs as one LLM call returning a single typed object. It
-prefers OPENAI_API_KEY - the same credential the risk dashboard's entity
-resolution already uses for embeddings - and falls back to ANTHROPIC_API_KEY
-if that's configured instead. With neither key set, the endpoint serves
-curated sample decisions, exactly as the risk side ships offline demo
-subjects.
+prefers OPENROUTER_API_KEY (one key, routed to any of OpenRouter's models) and
+falls back to ANTHROPIC_API_KEY if that's configured instead. With neither key
+set, the endpoint serves curated sample decisions, exactly as the risk side
+ships offline demo subjects.
 """
 
 from __future__ import annotations
@@ -265,18 +264,18 @@ def _decorate(decision: dict) -> dict:
 async def decide(question: str) -> dict:
     """Run the decision board for `question`.
 
-    Preference order mirrors the risk dashboard's own key handling: OpenAI
-    (OPENAI_API_KEY - the same credential the entity-resolution embeddings
-    already use) runs the board live first, then Anthropic if configured
-    instead, then a matching curated sample, then a structured keyless notice.
+    OpenRouter (OPENROUTER_API_KEY) runs the board live first - one key,
+    routed to whichever model `settings.openrouter_model` names - then falls
+    back to Anthropic if that's configured instead, then a matching curated
+    sample, then a structured keyless notice.
     """
     question = (question or "").strip()
 
-    if settings.openai_api_key:
+    if settings.openrouter_api_key:
         try:
-            decision = await _decide_openai(question)
+            decision = await _decide_openrouter(question)
         except Exception as exc:  # noqa: BLE001 - never 500 the endpoint on the LLM
-            log.warning("strategy board (OpenAI) generation failed: %s", exc)
+            log.warning("strategy board (OpenRouter) generation failed: %s", exc)
         else:
             return decision
 
@@ -333,13 +332,13 @@ async def _decide_claude(question: str, client) -> dict:
 
 
 # --------------------------------------------------------------------------
-# OpenAI path - plain REST via httpx (the `openai` package is an optional
-# dependency this app doesn't otherwise require). Chat Completions'
+# OpenRouter path - one key, routed to whichever model is configured, via
+# plain REST over httpx (OpenRouter's API is OpenAI-Chat-Completions-shaped).
 # `json_object` mode gives no schema guarantee the way Claude's structured
 # output does, so the response is defensively normalised in `_normalize()`
 # before being handed to `_decorate()`.
 # --------------------------------------------------------------------------
-OPENAI_SYSTEM_PROMPT = SYSTEM_PROMPT + (
+OPENROUTER_SYSTEM_PROMPT = SYSTEM_PROMPT + (
     "\n\nReturn a single JSON object (no markdown, no prose outside the "
     "object) with exactly these top-level keys: decision_type, stakes, "
     "success_criteria (array of 3 strings), verdict (object with decision, "
@@ -357,21 +356,23 @@ OPENAI_SYSTEM_PROMPT = SYSTEM_PROMPT + (
 )
 
 
-async def _call_openai_chat(system: str, user: str) -> dict:
-    """POST chat/completions with json_object mode; returns the parsed content
-    plus generation metadata. Raises on any failure - the caller decides what
-    to fall back to."""
+async def _call_openrouter_chat(system: str, user: str) -> dict:
+    """POST chat/completions to OpenRouter with json_object mode; returns the
+    parsed content plus generation metadata. Raises on any failure - the
+    caller decides what to fall back to."""
     from app.http_client import get_client
 
     http = get_client()
     resp = await http.post(
-        "https://api.openai.com/v1/chat/completions",
+        "https://openrouter.ai/api/v1/chat/completions",
         headers={
-            "Authorization": f"Bearer {settings.openai_api_key}",
+            "Authorization": f"Bearer {settings.openrouter_api_key}",
             "Content-Type": "application/json",
+            "HTTP-Referer": "https://supplier-intelligence-api-1062146216736.us-central1.run.app",
+            "X-Title": "Supplier Intelligence API - Strategy Board",
         },
         json={
-            "model": settings.openai_chat_model,
+            "model": settings.openrouter_model,
             "messages": [
                 {"role": "system", "content": system},
                 {"role": "user", "content": user},
@@ -387,7 +388,7 @@ async def _call_openai_chat(system: str, user: str) -> dict:
     usage = data.get("usage") or {}
     return {
         "raw": json.loads(content),
-        "generated_by": settings.openai_chat_model,
+        "generated_by": f"{settings.openrouter_model} (via OpenRouter)",
         "usage": {
             "input_tokens": usage.get("prompt_tokens"),
             "output_tokens": usage.get("completion_tokens"),
@@ -395,12 +396,12 @@ async def _call_openai_chat(system: str, user: str) -> dict:
     }
 
 
-async def _decide_openai(question: str) -> dict:
+async def _decide_openrouter(question: str) -> dict:
     user_message = (
         f"Evaluate this executive decision and return the board verdict as "
         f"JSON:\n\n{question}"
     )
-    result = await _call_openai_chat(OPENAI_SYSTEM_PROMPT, user_message)
+    result = await _call_openrouter_chat(OPENROUTER_SYSTEM_PROMPT, user_message)
     decision = _normalize(question, result["raw"])
     decision["generated_by"] = result["generated_by"]
     decision["usage"] = result["usage"]
@@ -415,10 +416,43 @@ def _clamp_int(value, lo: int, hi: int, default: int) -> int:
     return max(lo, min(hi, n))
 
 
+def _confidence_pct(value, default: int = 50) -> int:
+    """Confidence is specified as 0-100, but smaller/looser models routinely
+    answer with a 0-1 probability instead (0.75 for "75% confident"). A
+    fractional value in that range is unambiguous - no real board confidence
+    is legitimately 1% - so it's scaled up rather than clamped down to 1."""
+    try:
+        n = float(value)
+    except (TypeError, ValueError):
+        return default
+    if 0 < n <= 1:
+        n *= 100
+    return max(0, min(100, int(round(n))))
+
+
+def _risk_band(value, default: str = "MEDIUM") -> str:
+    """financial_risk/regulatory_risk/execution_risk should be LOW/MEDIUM/HIGH,
+    but some models answer with a numeric severity instead. Band a 0-10 (or
+    0-1 fractional) score rather than silently discarding the model's signal."""
+    if value in RISK_LEVELS:
+        return value
+    try:
+        n = float(value)
+    except (TypeError, ValueError):
+        return default
+    if 0 < n <= 1:
+        n *= 10
+    if n <= 3:
+        return "LOW"
+    if n <= 6:
+        return "MEDIUM"
+    return "HIGH"
+
+
 def _normalize(question: str, raw: dict) -> dict:
     """Fill in a defensible shape for whatever the model actually returned,
-    since OpenAI's json_object mode enforces no schema. Every field the UI
-    reads gets a safe default rather than a KeyError."""
+    since json_object mode enforces no schema. Every field the UI reads gets
+    a safe default rather than a KeyError."""
     d = dict(raw) if isinstance(raw, dict) else {}
     d["question"] = question
 
@@ -431,11 +465,11 @@ def _normalize(question: str, raw: dict) -> dict:
     decision = v.get("decision") if v.get("decision") in DECISIONS else "MORE INFORMATION REQUIRED"
     d["verdict"] = {
         "decision": decision,
-        "confidence": _clamp_int(v.get("confidence"), 0, 100, 50),
+        "confidence": _confidence_pct(v.get("confidence"), 50),
         "strategic_fit": _clamp_int(v.get("strategic_fit"), 0, 10, 5),
-        "financial_risk": v.get("financial_risk") if v.get("financial_risk") in RISK_LEVELS else "MEDIUM",
-        "regulatory_risk": v.get("regulatory_risk") if v.get("regulatory_risk") in RISK_LEVELS else "MEDIUM",
-        "execution_risk": v.get("execution_risk") if v.get("execution_risk") in RISK_LEVELS else "MEDIUM",
+        "financial_risk": _risk_band(v.get("financial_risk")),
+        "regulatory_risk": _risk_band(v.get("regulatory_risk")),
+        "execution_risk": _risk_band(v.get("execution_risk")),
         "chair_summary": str(v.get("chair_summary") or ""),
     }
 
@@ -524,7 +558,7 @@ def _keyless_notice(question: str, error: str | None = None) -> dict:
         "available": False,
         "generated_by": "unavailable",
         "notice": (
-            "The live decision board needs an LLM key (OPENAI_API_KEY or "
+            "The live decision board needs an LLM key (OPENROUTER_API_KEY or "
             "ANTHROPIC_API_KEY). Pick one of the sample decisions to see the "
             "full board, or set a key to run this question live."
         ),

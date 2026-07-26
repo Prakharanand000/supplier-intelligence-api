@@ -47,13 +47,23 @@ def test_match_maps_questions_to_samples():
     assert samples.match("Should Acme buy Globex?") is None
 
 
-def test_decide_without_key_returns_matching_sample():
+def _no_live_keys(monkeypatch):
+    """Force the offline path regardless of what a developer's local .env
+    actually contains - these tests assert behaviour with no key configured,
+    not behaviour with whatever happens to be in the environment."""
+    monkeypatch.setattr(board.settings, "openrouter_api_key", None)
+    monkeypatch.setattr(board, "_get_client", lambda: None)
+
+
+def test_decide_without_key_returns_matching_sample(monkeypatch):
+    _no_live_keys(monkeypatch)
     out = asyncio.run(strategy.decide("Should Salesforce acquire Notion?"))
     assert out["verdict"]["decision"] == "NO-GO"
     assert "no live LLM key configured" in out["generated_by"]
 
 
-def test_decide_without_key_and_no_match_is_a_structured_notice():
+def test_decide_without_key_and_no_match_is_a_structured_notice(monkeypatch):
+    _no_live_keys(monkeypatch)
     out = asyncio.run(strategy.decide("Should Acme buy Globex?"))
     assert out["available"] is False
     assert out["notice"]
@@ -86,8 +96,34 @@ def test_normalize_fills_defaults_and_clamps_invalid_values():
     assert members == board.BOARD_MEMBERS  # all 4 present even though only CEO was given
 
 
-def test_decide_prefers_openai_when_key_is_set(monkeypatch):
-    monkeypatch.setattr(board.settings, "openai_api_key", "sk-test")
+def test_normalize_scales_a_fractional_confidence_to_percent():
+    # Weaker models routinely answer "confidence: 0-100" with a 0-1 probability
+    # instead (e.g. 0.75 for "75% sure"). No real board confidence is 1%, so
+    # that reading must be rejected in favour of scaling up.
+    out = board._normalize("Q?", {"verdict": {"confidence": 0.75}})
+    assert out["verdict"]["confidence"] == 75
+    # A value already on the 0-100 scale is left alone.
+    out2 = board._normalize("Q?", {"verdict": {"confidence": 82}})
+    assert out2["verdict"]["confidence"] == 82
+
+
+def test_normalize_bands_a_numeric_risk_level():
+    # Same failure mode for financial/regulatory/execution risk: the model
+    # sometimes answers with a raw severity number instead of LOW/MEDIUM/HIGH.
+    out = board._normalize(
+        "Q?",
+        {"verdict": {"financial_risk": 2, "regulatory_risk": 5, "execution_risk": 9}},
+    )
+    assert out["verdict"]["financial_risk"] == "LOW"
+    assert out["verdict"]["regulatory_risk"] == "MEDIUM"
+    assert out["verdict"]["execution_risk"] == "HIGH"
+    # A valid enum string passes through untouched.
+    out2 = board._normalize("Q?", {"verdict": {"financial_risk": "HIGH"}})
+    assert out2["verdict"]["financial_risk"] == "HIGH"
+
+
+def test_decide_prefers_openrouter_when_key_is_set(monkeypatch):
+    monkeypatch.setattr(board.settings, "openrouter_api_key", "sk-or-test")
 
     async def fake_call(system, user):
         return {
@@ -95,23 +131,23 @@ def test_decide_prefers_openai_when_key_is_set(monkeypatch):
                 "verdict": {"decision": "NO-GO", "confidence": 40},
                 "seats": [], "attacks": [], "board_vote": [],
             },
-            "generated_by": "gpt-4o-mini",
+            "generated_by": "openai/gpt-4o-mini (via OpenRouter)",
             "usage": {"input_tokens": 10, "output_tokens": 20},
         }
 
-    monkeypatch.setattr(board, "_call_openai_chat", fake_call)
+    monkeypatch.setattr(board, "_call_openrouter_chat", fake_call)
     out = asyncio.run(strategy.decide("Should Acme buy Globex?"))
-    assert out["generated_by"] == "gpt-4o-mini"
+    assert out["generated_by"] == "openai/gpt-4o-mini (via OpenRouter)"
     assert out["verdict"]["decision"] == "NO-GO"
 
 
-def test_decide_falls_back_to_sample_when_openai_call_fails(monkeypatch):
-    monkeypatch.setattr(board.settings, "openai_api_key", "sk-test")
+def test_decide_falls_back_to_sample_when_openrouter_call_fails(monkeypatch):
+    monkeypatch.setattr(board.settings, "openrouter_api_key", "sk-or-test")
 
     async def failing_call(system, user):
         raise RuntimeError("network down")
 
-    monkeypatch.setattr(board, "_call_openai_chat", failing_call)
+    monkeypatch.setattr(board, "_call_openrouter_chat", failing_call)
     out = asyncio.run(strategy.decide("Should Salesforce acquire Notion?"))
     assert out["verdict"]["decision"] == "NO-GO"
     assert "no live LLM key configured" in out["generated_by"]

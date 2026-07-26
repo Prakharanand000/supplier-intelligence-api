@@ -36,9 +36,10 @@ class Settings(BaseSettings):
     # Embeddings: auto | openai | local | hashed
     embedding_backend: str = "auto"
     openai_api_key: str | None = None
-    # Chat model used for the strategy board when OPENAI_API_KEY is set - the
-    # same credential the embedding backend above already uses.
-    openai_chat_model: str = "gpt-4o-mini"
+
+    # Strategy board LLM, routed through OpenRouter (one key, many models).
+    openrouter_api_key: str | None = None
+    openrouter_model: str = "openai/gpt-4o-mini"
 
     # Optional source credentials
     courtlistener_api_token: str | None = None

@@ -64,6 +64,7 @@ instead. `GET /api/v1/health` reports which backend is live.
 | --- | --- |
 | `ANTHROPIC_API_KEY` | Report is composed deterministically from the same evidence instead of by Claude. Everything else is unchanged. |
 | `OPENAI_API_KEY` | Embeddings fall back to `sentence-transformers` if installed, else a pure-python hashed char-ngram vectorizer. Entity resolution never requires a paid API. |
+| `OPENROUTER_API_KEY` | The Strategy board serves curated sample decisions instead of running the question live. Falls back to `ANTHROPIC_API_KEY` if that's set instead. |
 | `COURTLISTENER_API_TOKEN` | Litigation is reported as a **coverage gap**, not as "no litigation". |
 
 ---

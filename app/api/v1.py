@@ -7,6 +7,7 @@ import logging
 from fastapi import APIRouter, HTTPException, Query
 from sqlalchemy import func, select
 
+from app import crew
 from app import db as database
 from app import demo
 from app.models import Investigation
@@ -97,6 +98,31 @@ async def risk_categories() -> dict:
 async def graph_insight(request: GraphInsightRequest) -> dict:
     """Explain a specific network connection, grounded in the supplied facts."""
     return await connection_insight(request.model_dump())
+
+
+@router.get("/crew/roster", summary="The multi-agent investigation crew")
+async def crew_roster() -> dict:
+    """Static definition of the ten specialist agents and their task order."""
+    return {"agents": crew.roster()}
+
+
+@router.post("/crew/trace", summary="Replay the crew against an investigation")
+async def crew_trace(investigation: dict) -> dict:
+    """Given a completed investigation object, return each specialist agent's
+    real finding - the crew view's evidence-backed per-agent breakdown."""
+    return crew.trace(investigation)
+
+
+@router.get(
+    "/crew/trace/{investigation_id}",
+    summary="Replay the crew against a stored investigation",
+)
+async def crew_trace_stored(investigation_id: int) -> dict:
+    async with database.session_factory()() as session:
+        row = await session.get(Investigation, investigation_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail="investigation not found")
+    return crew.trace(row.result)
 
 
 @router.get("/demo/subjects", summary="Demo subjects (offline sample dataset)")

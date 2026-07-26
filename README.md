@@ -88,6 +88,8 @@ Returns `supplier`, `entity_resolution`, `ownership`, `sanctions`,
 | `GET /api/v1/investigations` | Recent investigations |
 | `GET /api/v1/investigations/{id}` | Replay a stored intelligence object |
 | `POST /api/v1/admin/ofac/refresh` | Force a re-download of the SDN list |
+| `GET /api/v1/crew/roster` | The ten specialist agents and their task order |
+| `POST /api/v1/crew/trace` | Replay the agent crew against an investigation object |
 | `GET /api/v1/health` | Backend, embedding mode, SDN size |
 
 ---
@@ -312,6 +314,22 @@ returns a complete investigation.
 
 The layout is ~30 lines of force-directed simulation rather than a charting
 library, so the page stays dependency-free and works offline.
+
+**4 &middot; Agent crew.** The same investigation, told as the ten-specialist
+compliance crew that produced it. This is the [CrewAI][crewai] "supplier third
+party risk intelligence" crew ported into the app: each agent keeps its original
+brief (Name Variant, Corporate Identity, Adverse Media, Litigation, Sanctions,
+Beneficial Ownership, Sentiment, Risk Synthesis, and the Email Alerting
+specialist, orchestrated by the Lead Investigator) and is re-grounded on this
+platform's live sources and deterministic engines instead of an LLM + web-search
+loop. The view animates the crew running in sequence and then shows, per agent,
+the **real** finding it produced - status, headline, metrics and the crew tools
+vs. live source that powered it. A failed source surfaces as that agent's
+coverage gap, exactly as the original crew's lead investigator logged it. The
+per-agent breakdown is served by `POST /api/v1/crew/trace`, so an external agent
+can consume the same structure.
+
+[crewai]: https://crewai.com
 
 ### On the transaction graph
 

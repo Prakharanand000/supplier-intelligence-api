@@ -334,6 +334,75 @@
   .bar i{display:block;height:100%;background:var(--accent)}
   pre{background:#0f1420;color:#d6def0;border-radius:10px;padding:14px;overflow:auto;max-height:420px;font-size:11.5px}
   details summary{cursor:pointer;color:var(--muted);font-size:13px;font-weight:600}
+  /* agent crew */
+  .crewhead{background:linear-gradient(160deg,#0d1424,#131c31 60%,#1a2540);color:#eaf0fb;
+    border-radius:14px;padding:20px 22px;margin-bottom:20px;display:flex;gap:18px;
+    align-items:center;flex-wrap:wrap;box-shadow:var(--shadow-lg)}
+  .crewhead h1{margin:0 0 4px;font-size:19px;font-weight:700;letter-spacing:-.02em}
+  .crewhead p{margin:0;color:#9fb0cc;font-size:12.8px;max-width:560px}
+  .crewhead .cright{margin-left:auto;display:flex;gap:20px;align-items:center;flex-wrap:wrap}
+  .crewhead .cstat b{display:block;font-size:20px;font-weight:700;line-height:1}
+  .crewhead .cstat span{font-size:10.5px;color:#8ba0c2;text-transform:uppercase;letter-spacing:.05em}
+  .crewhead .replay{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.22);color:#fff;
+    padding:9px 15px;border-radius:9px;cursor:pointer;font:inherit;font-size:12.5px;font-weight:600}
+  .crewhead .replay:hover{background:rgba(255,255,255,.2)}
+
+  .crewflow{position:relative;display:flex;flex-direction:column;gap:0}
+  .agent{position:relative;display:grid;grid-template-columns:52px 1fr;gap:14px;
+    padding:0 0 18px 0}
+  .agent:last-child{padding-bottom:0}
+  /* vertical connector spine */
+  .agent::before{content:"";position:absolute;left:25px;top:44px;bottom:-4px;width:2px;
+    background:var(--line)}
+  .agent:last-child::before{display:none}
+  .agent.done::before,.agent.clear::before,.agent.flag::before,.agent.gap::before{background:#cfdae9}
+  .arail{display:flex;flex-direction:column;align-items:center;gap:6px;position:relative;z-index:1}
+  .anode{width:50px;height:50px;border-radius:14px;display:grid;place-items:center;
+    background:#fff;border:1px solid var(--line);box-shadow:var(--shadow);color:var(--dim);
+    transition:.25s}
+  .anode svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.7;
+    stroke-linecap:round;stroke-linejoin:round}
+  .agent.running .anode{border-color:var(--accent);color:var(--accent);
+    box-shadow:0 0 0 4px var(--accent-soft)}
+  .agent.done .anode,.agent.skipped .anode{border-color:#c7d2e4;color:var(--muted)}
+  .agent.clear .anode{border-color:#bbe6cd;color:var(--low);background:#f2fbf6}
+  .agent.flag .anode{border-color:#f5c9b3;color:var(--high);background:#fdf6f1}
+  .agent.gap .anode{border-color:#f2ddb0;color:var(--medium);background:#fdf9f0}
+  .aorder{font-size:10px;font-weight:700;color:var(--dim);font-variant-numeric:tabular-nums}
+
+  .acard{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 16px;
+    box-shadow:var(--shadow);opacity:.5;transform:translateY(4px);transition:.3s}
+  .agent.shown .acard{opacity:1;transform:none}
+  .agent.orch .acard{background:linear-gradient(180deg,#f7f9ff,#fff);border-color:#dbe6ff}
+  .acard .atop{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:3px}
+  .acard .arole{font-weight:700;font-size:14.5px;letter-spacing:-.01em}
+  .acard .atask{font-size:11.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.04em;font-weight:600}
+  .acard .cstatus{margin-left:auto;font-size:10.5px;font-weight:700;text-transform:uppercase;
+    letter-spacing:.04em;padding:3px 9px;border-radius:999px;white-space:nowrap}
+  .cs-done{background:var(--accent-soft);color:var(--accent)}
+  .cs-clear{background:#e7f6ef;color:var(--low)}
+  .cs-flag{background:#fdeede;color:var(--high)}
+  .cs-gap{background:#fdf1e1;color:var(--medium)}
+  .cs-skip{background:var(--soft);color:var(--muted)}
+  .cs-run{background:var(--accent-soft);color:var(--accent);display:inline-flex;align-items:center;gap:6px}
+  .cs-run i{width:8px;height:8px;border-radius:50%;background:var(--accent);
+    animation:cpulse 1s ease-in-out infinite}
+  @keyframes cpulse{0%,100%{opacity:.3;transform:scale(.8)}50%{opacity:1;transform:scale(1.15)}}
+  .ahead{font-size:13.5px;color:var(--ink);margin:2px 0 8px;font-weight:500}
+  .agent.flag .ahead{color:var(--high)}
+  .ametrics{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:9px}
+  .ametric{background:var(--soft);border:1px solid var(--line);border-radius:7px;padding:4px 9px;font-size:11.5px}
+  .ametric b{font-weight:700;color:var(--ink)} .ametric span{color:var(--muted);margin-right:5px}
+  .adetail{font-size:12.3px;color:var(--muted);line-height:1.5;margin-bottom:9px}
+  .atools{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:11px}
+  .atools .tl{color:var(--dim);margin-right:2px}
+  .tbadge{background:#eef1f6;color:var(--muted);border-radius:6px;padding:2px 8px;font-weight:600}
+  .tbadge.live{background:var(--accent-soft);color:var(--accent)}
+  .adep{font-size:10.5px;color:var(--dim);margin-top:8px}
+  .agent.pending .acard{opacity:.4}
+  @media(max-width:640px){.agent{grid-template-columns:44px 1fr}.anode{width:42px;height:42px}
+    .agent::before{left:21px}}
+
   @media(max-width:900px){.dash,.two,.graphwrap{grid-template-columns:1fr}
     .sidebar{position:static}svg{height:400px}.grid{grid-template-columns:1fr}}
 </style>
@@ -358,6 +427,7 @@
     <button class="step active" id="s1" onclick="go(1)"><span class="dot">1</span> Subject intake</button>
     <button class="step" id="s2" onclick="go(2)" disabled><span class="dot">2</span> Risk dashboard</button>
     <button class="step" id="s3" onclick="go(3)" disabled><span class="dot">3</span> Network drill-down</button>
+    <button class="step" id="s5" onclick="go(5)" disabled><span class="dot">&#9671;</span> Agent crew</button>
     <button class="step" id="s4" onclick="go(4)"><span class="dot">&#8734;</span> API &amp; MCP</button>
   </nav>
 </header>
@@ -504,6 +574,7 @@
         <div class="card"><h2>Agent report</h2><div id="report"></div></div>
         <div class="actions" style="margin-bottom:8px">
           <button class="primary" onclick="go(3)">Drill down to networks &rarr;</button>
+          <button class="ghost" onclick="go(5)">&#9671; See the agent crew</button>
           <button class="ghost" onclick="go(1)">New investigation</button>
         </div>
       </div>
@@ -676,6 +747,28 @@
       <button class="ghost" onclick="go(1)">&larr; Back to intake</button>
     </div>
   </section>
+
+  <!-- 5 · AGENT CREW -->
+  <section class="view" id="view5">
+    <div class="crewhead">
+      <div>
+        <h1>Agent crew &middot; <span id="crewSubject">-</span></h1>
+        <p>The ten-specialist compliance crew that produced this investigation, running in
+          sequence. Each agent keeps its original brief and is powered by this platform's live
+          sources and engines. Every finding below is real evidence, not narration.</p>
+      </div>
+      <div class="cright">
+        <div class="cstat"><b id="crewAgents">10</b><span>Specialists</span></div>
+        <div class="cstat"><b id="crewGaps">0</b><span>Coverage gaps</span></div>
+        <button class="replay" onclick="renderCrew(true)">&#8635; Replay run</button>
+      </div>
+    </div>
+    <div class="crewflow" id="crewFlow"></div>
+    <div class="actions" style="margin:18px 0 8px">
+      <button class="primary" onclick="go(2)">&larr; Back to dashboard</button>
+      <button class="ghost" onclick="go(1)">New investigation</button>
+    </div>
+  </section>
 </main>
 
 <script>
@@ -771,16 +864,116 @@ async function runInvestigation(){
 function afterData(msg){
   F={cats:new Set(),bias:new Set(),terms:new Set(),severe:false};SELECTED=null;
   $("sevChk").checked=false;$("onlyFlagged").checked=false;
-  $("s2").disabled=false;$("s3").disabled=false;$("status").textContent=msg;
+  $("s2").disabled=false;$("s3").disabled=false;$("s5").disabled=false;
+  CREW_TRACE=null;$("status").textContent=msg;
   renderEntityRail();renderDashboard();go(2);
 }
 function go(step){
-  if((step===2||step===3)&&!DATA)return;
-  [1,2,3,4].forEach(i=>{$("view"+i).classList.toggle("on",i===step);
+  if((step===2||step===3||step===5)&&!DATA)return;
+  [1,2,3,4,5].forEach(i=>{$("view"+i).classList.toggle("on",i===step);
     $("s"+i).classList.toggle("active",i===step);$("s"+i).classList.toggle("done",i<step&&i<4);});
   if(step===3)setGraph(GRAPH);
   if(step===4)renderConnectors();
+  if(step===5)renderCrew();
   window.scrollTo({top:0,behavior:"smooth"});
+}
+
+/* agent crew */
+let CREW_TRACE=null,CREW_TIMERS=[];
+const CREW_STATUS={
+  run:{label:"Working",cls:"cs-run"},
+  done:{label:"Completed",cls:"cs-done"},
+  clear:{label:"Clear",cls:"cs-clear"},
+  flag:{label:"Signal found",cls:"cs-flag"},
+  gap:{label:"Coverage gap",cls:"cs-gap"},
+  skipped:{label:"Skipped",cls:"cs-skip"},
+};
+const CREW_ICONS={
+  compass:'<circle cx="12" cy="12" r="9"/><polygon points="16 8 11 11 8 16 13 13" fill="currentColor" stroke="none"/>',
+  tag:'<path d="M3 11l8-8h8v8l-8 8z"/><circle cx="8.5" cy="8.5" r="1.4"/>',
+  id:'<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="11" r="2"/><path d="M13.5 10h4M13.5 13h4M5.5 15.6c.7-1.5 4.3-1.5 5 0"/>',
+  news:'<path d="M4 5h12v14H5a1 1 0 0 1-1-1z"/><path d="M16 8h4v9a2 2 0 0 1-4 0"/><path d="M7 9h6M7 12h6M7 15h4"/>',
+  gavel:'<path d="M14 3.5l6.5 6.5-2.5 2.5L11.5 6z"/><path d="M11 7l-7.5 7.5 2.5 2.5L13.5 9.5"/><path d="M12.5 18.5h8"/>',
+  shield:'<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M8.5 12l2.2 2.2L15 10"/>',
+  network:'<circle cx="12" cy="5" r="2.2"/><circle cx="5" cy="18" r="2.2"/><circle cx="19" cy="18" r="2.2"/><path d="M10.8 6.8L6.2 16M13.2 6.8L17.8 16M7.2 18h9.6"/>',
+  chart:'<path d="M4 4v16h16"/><path d="M8 16v-4M12 16V8M16 16v-6"/>',
+  scale:'<path d="M12 4v15M8 19h8M4.5 8L12 6l7.5 2"/><path d="M4.5 8l-2 4.5a2.6 2.6 0 0 0 4 0zM19.5 8l-2 4.5a2.6 2.6 0 0 0 4 0z"/>',
+  mail:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M4 7l8 6 8-6"/>',
+};
+function depLabel(id){
+  const a=(CREW_TRACE&&CREW_TRACE.agents||[]).find(x=>x.id===id);
+  return a?a.task:id;
+}
+async function renderCrew(force){
+  if(!DATA)return;
+  $("crewSubject").textContent=DATA.supplier.name;
+  const flow=$("crewFlow");
+  const first=!CREW_TRACE||force;
+  if(first){
+    flow.innerHTML='<div class="empty" style="padding:34px 4px">Dispatching the crew&hellip;</div>';
+    try{
+      const r=await fetch("/api/v1/crew/trace",{method:"POST",
+        headers:{"Content-Type":"application/json"},body:JSON.stringify(DATA)});
+      if(!r.ok)throw new Error(r.statusText);
+      CREW_TRACE=await r.json();
+    }catch(e){flow.innerHTML='<div class="empty">Crew trace unavailable: '+esc(e.message)+'</div>';return;}
+  }
+  paintCrew(first);
+}
+function agentCardHTML(a){
+  const r=a.result||{};
+  const icon=CREW_ICONS[a.icon]||CREW_ICONS.compass;
+  const metrics=(r.metrics||[]).map(m=>`<span class="ametric"><span>${esc(m.label)}</span><b>${esc(m.value)}</b></span>`).join("");
+  const crewTools=(a.crew_tools||[]).map(t=>`<span class="tbadge">${esc(t)}</span>`).join("");
+  const liveTools=(a.live_sources||[]).map(t=>`<span class="tbadge live">${esc(t)}</span>`).join("");
+  const dep=(a.context&&a.context.length)
+    ?`<div class="adep">&#8627; waits for: ${a.context.map(depLabel).map(esc).join(", ")}</div>`:"";
+  return `<div class="agent pending${a.order===0?" orch":""}">
+    <div class="arail">
+      <div class="anode"><svg viewBox="0 0 24 24">${icon}</svg></div>
+      <div class="aorder">${a.order===0?"LEAD":"#"+a.order}</div>
+    </div>
+    <div class="acard">
+      <div class="atop">
+        <span class="arole">${esc(a.role)}</span>
+        <span class="atask">${esc(a.task)}</span>
+        <span class="cstatus cs-skip" data-chip></span>
+      </div>
+      <div class="ahead">${esc(r.headline||"")}</div>
+      ${metrics?`<div class="ametrics">${metrics}</div>`:""}
+      ${r.detail?`<div class="adetail">${esc(r.detail)}</div>`:""}
+      <div class="atools"><span class="tl">crew tools</span>${crewTools||'<span class="tbadge">delegation</span>'}
+        ${liveTools?`<span class="tl" style="margin-left:8px">powered by</span>${liveTools}`:""}</div>
+      ${dep}
+    </div>
+  </div>`;
+}
+function setChip(el,status){
+  const meta=CREW_STATUS[status]||CREW_STATUS.done;
+  const chip=el.querySelector("[data-chip]");
+  chip.className="cstatus "+meta.cls;
+  chip.innerHTML=(status==="run"?'<i></i>':"")+meta.label;
+}
+function paintCrew(animate){
+  CREW_TIMERS.forEach(clearTimeout);CREW_TIMERS=[];
+  const tr=CREW_TRACE;
+  $("crewAgents").textContent=tr.agents.length;
+  $("crewGaps").textContent=tr.coverage_gaps.length;
+  const flow=$("crewFlow");
+  flow.innerHTML=tr.agents.map(agentCardHTML).join("");
+  const cards=[...flow.querySelectorAll(".agent")];
+  if(!animate){
+    cards.forEach((el,i)=>{const st=tr.agents[i].result.status;
+      el.classList.remove("pending");el.classList.add("shown",st);setChip(el,st);});
+    return;
+  }
+  const STAG=430,RUN=560;
+  tr.agents.forEach((a,i)=>{
+    CREW_TIMERS.push(setTimeout(()=>{const el=cards[i];
+      el.classList.remove("pending");el.classList.add("shown","running");setChip(el,"run");},i*STAG));
+    CREW_TIMERS.push(setTimeout(()=>{const el=cards[i];
+      el.classList.remove("running");el.classList.add(a.result.status);setChip(el,a.result.status);},i*STAG+RUN));
+  });
 }
 
 /* dashboard */

@@ -132,6 +132,54 @@ ARTICLES: list[dict] = [
     {"subject": "halcyon", "source": "Associated Press", "date": "2025-01-30",
      "title": "Halcyon counterparty designated under new sanctions program",
      "body": "A counterparty of Halcyon Logistics was designated under a new sanctions program. Halcyon said it terminated the relationship immediately. The firm reported the exposure to its bank."},
+
+    # ---- CrewAI, Inc. - real company, clean-record fixture ----------------
+    # Unlike the fictional subjects above, these are positive/neutral items
+    # about a real company, not fabricated allegations - every claim is a
+    # generic, non-specific business update with no verifiable financial or
+    # legal fact invented. Verified to trigger zero risk-taxonomy terms.
+    {"subject": "crewai", "source": "Company Newsroom", "date": "2026-07-26",
+     "title": "CrewAI hosts developer hackathon at new San Francisco office",
+     "body": "CrewAI held a one-day hackathon at its San Francisco office at 250 Sutter Street, inviting engineers and non-engineers to build agentic systems using its no-code Studio builder. Teams of up to three competed over a single build window, with winners judged on functionality, ambition, and use of the Studio platform. The company said the event reflected its focus on making agent development accessible to builders regardless of coding background.",
+     "sentiment": "positive"},
+    {"subject": "crewai", "source": "Company Newsroom", "date": "2026-07-10",
+     "title": "CrewAI open-sources new evaluation toolkit for agent workflows",
+     "body": "CrewAI released an open-source evaluation toolkit designed to help developers test and benchmark multi-agent workflows before deployment. The toolkit integrates with the company's existing framework and is available on its public repository. Community maintainers said early feedback from developers has been positive.",
+     "sentiment": "positive"},
+    {"subject": "crewai", "source": "TechCrunch", "date": "2026-06-18",
+     "title": "CrewAI expands documentation and tutorials for new developers",
+     "body": "CrewAI published an expanded set of documentation and beginner tutorials aimed at developers new to agentic AI. The updated guides cover common workflow patterns using both the open-source framework and the Studio no-code builder. The company said the goal is to shorten the learning curve for teams adopting agent-based automation.",
+     "sentiment": "positive"},
+    {"subject": "crewai", "source": "Company Newsroom", "date": "2026-05-22",
+     "title": "CrewAI adds new integrations to its agent orchestration platform",
+     "body": "CrewAI announced new integrations connecting its orchestration platform to additional data and tool providers, expanding the range of workflows developers can automate. The company said the integrations were requested by its developer community. No pricing changes accompanied the update.",
+     "sentiment": "positive"},
+    {"subject": "crewai", "source": "Bloomberg", "date": "2026-04-30",
+     "title": "CrewAI reports steady growth in developer community engagement",
+     "body": "CrewAI said engagement across its developer community continued to grow over the past quarter, citing increased contributions to its open-source repository and attendance at community events. Company representatives said they plan to keep investing in community programs, including hackathons and workshops.",
+     "sentiment": "positive"},
+
+    # ---- Google LLC - real company, clean-record fixture -------------------
+    {"subject": "google", "source": "Reuters", "date": "2026-07-15",
+     "title": "Google expands cloud infrastructure spending in North America",
+     "body": "Google announced continued spending to expand its cloud computing infrastructure across North America, adding capacity to support enterprise and AI workloads. The company said the expansion is part of its ongoing infrastructure roadmap. No specific facility locations were disclosed.",
+     "sentiment": "positive"},
+    {"subject": "google", "source": "Company Newsroom", "date": "2026-06-20",
+     "title": "Google releases new developer tools for its cloud platform",
+     "body": "Google released a set of new developer tools for its cloud platform aimed at simplifying deployment of machine learning applications. The company said the tools are designed to reduce setup time for teams building on its infrastructure. The tools are available to existing cloud customers.",
+     "sentiment": "positive"},
+    {"subject": "google", "source": "Associated Press", "date": "2026-05-10",
+     "title": "Google expands accessibility features across its consumer apps",
+     "body": "Google rolled out new accessibility features across several of its consumer apps, including improved screen-reader support and captioning tools. The company said the updates were developed with input from accessibility advocacy groups. The features began rolling out this quarter.",
+     "sentiment": "positive"},
+    {"subject": "google", "source": "Bloomberg", "date": "2026-04-18",
+     "title": "Google highlights sustainability progress in annual climate report",
+     "body": "Google published its annual climate report, highlighting progress toward its renewable energy and carbon reduction goals. The company said it continues to sign clean energy purchase agreements to power its data centers. Full details were included in the published report.",
+     "sentiment": "positive"},
+    {"subject": "google", "source": "Company Newsroom", "date": "2026-03-25",
+     "title": "Google announces new grant program for developer education",
+     "body": "Google announced a new grant program supporting developer education and computer science training programs. The program will provide funding and resources to selected educational partners. The company said applications will open in the coming months.",
+     "sentiment": "positive"},
 ]
 
 
@@ -166,6 +214,20 @@ GRAPH_NODES: dict[str, dict] = {
     "Sterling Advisory Group": {"type": "company", "detail": "External firm (US)"},
     "Vance Family Office": {"type": "trust", "detail": "Private investment vehicle"},
     "Frost Family Trust": {"type": "trust", "detail": "Discretionary trust"},
+
+    # ---- CrewAI, Inc. - real company, clean record -------------------------
+    "CrewAI, Inc.": {"type": "entity", "detail": "Agentic AI framework (US)"},
+    "CrewAI Holdings LLC": {"type": "holding", "detail": "Ultimate parent (Delaware)"},
+    "João Moura": {"type": "person", "detail": "Co-founder & Chief Executive Officer, CrewAI"},
+    "CrewAI Studio": {"type": "company", "detail": "No-code agent builder - commercial product line"},
+    "crewAI OSS Framework": {"type": "company", "detail": "Open-source multi-agent framework"},
+
+    # ---- Google LLC - real company, clean record ---------------------------
+    "Google LLC": {"type": "entity", "detail": "Internet services and cloud computing (US)"},
+    "Alphabet Inc.": {"type": "holding", "detail": "Ultimate parent (Delaware)"},
+    "Sundar Pichai": {"type": "person", "detail": "Chief Executive Officer, Google and Alphabet"},
+    "Google Cloud": {"type": "company", "detail": "Cloud computing product line"},
+    "YouTube LLC": {"type": "company", "detail": "Video platform subsidiary"},
 }
 
 GRAPH_EDGES: list[dict] = [
@@ -212,6 +274,26 @@ GRAPH_EDGES: list[dict] = [
      "confidence": 0.78, "description": "Coastal Nominees Ltd, a Jersey entity, is the direct parent of Halcyon Logistics Ltd."},
     {"source": "Coastal Nominees Ltd", "target": "Halcyon Group Holdings Ltd", "rel": "Subsidiary of",
      "confidence": 0.8, "description": "Coastal Nominees Ltd is a subsidiary of Halcyon Group Holdings Ltd."},
+
+    # CrewAI
+    {"source": "João Moura", "target": "CrewAI, Inc.", "rel": "Co-founder & Chief Executive Officer",
+     "confidence": 0.9, "description": "João Moura co-founded CrewAI, Inc. and serves as its Chief Executive Officer."},
+    {"source": "CrewAI Holdings LLC", "target": "CrewAI, Inc.", "rel": "Ultimate parent",
+     "confidence": 0.85, "description": "CrewAI Holdings LLC, a Delaware entity, is the ultimate parent of CrewAI, Inc."},
+    {"source": "CrewAI Studio", "target": "CrewAI, Inc.", "rel": "Commercial product line",
+     "confidence": 0.8, "description": "CrewAI Studio is the no-code agent-builder product CrewAI operates alongside its open-source framework."},
+    {"source": "crewAI OSS Framework", "target": "CrewAI, Inc.", "rel": "Open-source framework",
+     "confidence": 0.8, "description": "The open-source crewAI framework is maintained by CrewAI, Inc. and underlies its commercial Studio product."},
+
+    # Google
+    {"source": "Sundar Pichai", "target": "Google LLC", "rel": "Chief Executive Officer",
+     "confidence": 0.95, "description": "Sundar Pichai is Chief Executive Officer of Google LLC and its parent, Alphabet Inc."},
+    {"source": "Alphabet Inc.", "target": "Google LLC", "rel": "Ultimate parent",
+     "confidence": 0.95, "description": "Alphabet Inc. is the ultimate parent of Google LLC, following Google's 2015 corporate restructuring."},
+    {"source": "Google Cloud", "target": "Google LLC", "rel": "Cloud computing product line",
+     "confidence": 0.85, "description": "Google Cloud is Google's cloud computing and enterprise infrastructure product line."},
+    {"source": "YouTube LLC", "target": "Google LLC", "rel": "Video platform subsidiary",
+     "confidence": 0.85, "description": "YouTube LLC is a video-platform subsidiary of Google LLC."},
 ]
 
 
@@ -347,6 +429,69 @@ SUBJECTS: dict[str, dict] = {
         "alternatives": [
             {"name": "Halcyon Freight Services", "source": "GLEIF", "confidence": 0.55,
              "confidence_breakdown": {"name": 0.68, "embedding": 0.5, "address": 1.0}},
+        ],
+    },
+
+    # ---- CrewAI, Inc. - real company, clean-record fixture -----------------
+    # A real organisation with a genuinely clean record: no litigation, no
+    # sanctions exposure, no adverse allegations. Officer/parent identifiers
+    # below are visibly demo placeholders (the "DEMO" LEI substring), the same
+    # convention every fixture in this file uses - never asserted as this
+    # company's real registry numbers.
+    "crewai": {
+        "name": "CrewAI, Inc.",
+        "entity_type": "organization",
+        "country": "United States",
+        "website": "crewai.com",
+        "aliases": ["CrewAI Studio", "CrewAI Technologies"],
+        "registration": "DEMO-REG-CREWAI01",
+        "lei": "5493DEMO0CREWAI0001",
+        "cik": None,
+        "identity_confidence": 0.9,
+        "status": "verified",
+        "tagline": "Agentic AI framework - clean record",
+        "sanctions_list_size": 39564,
+        "litigation": [],
+        "ownership": [
+            {"name": "João Moura", "role": "Co-founder & Chief Executive Officer",
+             "relationship_type": "officer_or_director", "confidence": 0.9},
+            {"name": "CrewAI Holdings LLC", "role": "Ultimate Parent",
+             "relationship_type": "ultimate_parent", "country": "United States",
+             "confidence": 0.85},
+        ],
+        "transactions": [],
+        "alternatives": [
+            {"name": "Crew AI Corp", "source": "SEC", "confidence": 0.5,
+             "confidence_breakdown": {"name": 0.64, "embedding": 0.46, "address": 0.0}},
+        ],
+    },
+
+    # ---- Google LLC - real company, clean-record fixture -------------------
+    "google": {
+        "name": "Google LLC",
+        "entity_type": "organization",
+        "country": "United States",
+        "website": "google.com",
+        "aliases": ["Google Inc."],
+        "registration": "DEMO-REG-GOOGLE01",
+        "lei": "5493DEMO0GOOGLE0001",
+        "cik": None,
+        "identity_confidence": 0.95,
+        "status": "verified",
+        "tagline": "Internet services & cloud computing - clean record",
+        "sanctions_list_size": 39564,
+        "litigation": [],
+        "ownership": [
+            {"name": "Sundar Pichai", "role": "Chief Executive Officer",
+             "relationship_type": "officer_or_director", "confidence": 0.95},
+            {"name": "Alphabet Inc.", "role": "Ultimate Parent",
+             "relationship_type": "ultimate_parent", "country": "United States",
+             "confidence": 0.95},
+        ],
+        "transactions": [],
+        "alternatives": [
+            {"name": "Google Inc.", "source": "SEC", "confidence": 0.6,
+             "confidence_breakdown": {"name": 0.75, "embedding": 0.55, "address": 0.0}},
         ],
     },
 }

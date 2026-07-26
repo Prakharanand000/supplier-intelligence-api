@@ -97,7 +97,12 @@ def _enrich_articles(sid: str) -> list[dict]:
                 "severity": round(risk_terms[0]["score"], 2),
                 "matched_terms": [t["term"] for t in risk_terms[:3]],
             }]
-        severity = max((c["severity"] for c in categories), default=0.4)
+        # An article that matched no risk category or term genuinely carries no
+        # signal - default to 0.0, not a mystery "moderate" score. Every
+        # template-generated adverse article always hits at least one category
+        # (the risk term is baked into its text), so this only changes the
+        # score for genuinely clean fixtures.
+        severity = max((c["severity"] for c in categories), default=0.0)
         out.append(
             {
                 "id": f"M{i + 1}",
@@ -106,7 +111,7 @@ def _enrich_articles(sid: str) -> list[dict]:
                 "date": art["date"],
                 "url": None,
                 "language": "en",
-                "sentiment": "negative",
+                "sentiment": art.get("sentiment", "negative"),
                 "severity": round(severity, 2),
                 "confidence": 0.9,
                 "categories": categories,

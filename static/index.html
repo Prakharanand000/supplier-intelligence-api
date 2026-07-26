@@ -500,8 +500,8 @@
   </div>
   <nav class="steps">
     <button class="step active" id="s1" onclick="go(1)"><span class="dot">&#9878;</span> Mission Control</button>
-    <button class="step" id="s2" onclick="go(2)" disabled><span class="dot">2</span> Adverse Media</button>
-    <button class="step" id="s3" onclick="go(3)" disabled><span class="dot">3</span> Relationships Intelligence</button>
+    <button class="step" id="s2" onclick="go(2)" disabled><span class="dot"></span> Adverse Media</button>
+    <button class="step" id="s3" onclick="go(3)" disabled><span class="dot"></span> Relationships Intelligence</button>
     <button class="step" id="s4" onclick="go(4)"><span class="dot">&#8734;</span> API &amp; MCP</button>
   </nav>
 </header>
@@ -511,7 +511,7 @@
   <section class="view on" id="view1">
     <div class="modeseg">
       <button class="on" data-mode="strategy" onclick="setMode('strategy')">Ask a decision question</button>
-      <button data-mode="screen" onclick="setMode('screen')">Screen a subject</button>
+      <button data-mode="screen" onclick="setMode('screen')">Screen Entity</button>
     </div>
 
     <div id="modeStrategy" class="mode-panel on">

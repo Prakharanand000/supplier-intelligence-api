@@ -110,11 +110,29 @@ def test_most_demo_articles_express_a_controlled_risk_term():
 
 
 def test_every_demo_article_is_category_tagged():
-    # Via the enriched pipeline (taxonomy + cosine fallback), every article
-    # lands in at least one of the five categories.
+    # Via the enriched pipeline (taxonomy + cosine fallback), every *adverse*
+    # article lands in at least one of the five categories. The clean-record
+    # fixtures below are deliberately risk-free real companies - landing in
+    # zero categories is the point of them, not a tagging gap.
     for sid in SUBJECTS:
+        if sid in CLEAN_RECORD_SUBJECTS:
+            continue
         for a in build_investigation(sid)["adverse_media"]:
             assert a["categories"], a["title"]
+
+
+CLEAN_RECORD_SUBJECTS = {"crewai", "google"}
+
+
+def test_clean_record_subjects_score_zero_risk():
+    for sid in CLEAN_RECORD_SUBJECTS:
+        inv = build_investigation(sid)
+        assert inv["risk"]["score"] == 0
+        assert inv["risk"]["level"] == "low"
+        assert len(inv["adverse_media"]) == 5
+        for a in inv["adverse_media"]:
+            assert a["categories"] == []
+            assert a["sentiment"] == "positive"
 
 
 def test_demo_dataset_spans_all_five_categories():

@@ -29,6 +29,15 @@ class InvestigationRequest(BaseModel):
     )
 
 
+class StrategyRequest(BaseModel):
+    """A high-stakes business question for the executive decision board."""
+
+    question: str = Field(
+        ..., min_length=6, max_length=400,
+        examples=["Should Salesforce acquire Notion?"],
+    )
+
+
 class GraphInsightRequest(BaseModel):
     """Facts about one graph edge or node, for the AI insight agent."""
 

@@ -403,6 +403,95 @@
   @media(max-width:640px){.agent{grid-template-columns:44px 1fr}.anode{width:42px;height:42px}
     .agent::before{left:21px}}
 
+  /* strategy board */
+  .stratbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+  .stratbar input{flex:1;min-width:240px}
+  .sampchips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+  .sampchip{text-align:left;background:#fff;border:1px solid var(--line);border-radius:10px;
+    padding:9px 13px;cursor:pointer;transition:.14s;display:flex;flex-direction:column;gap:3px;min-width:210px}
+  .sampchip:hover{border-color:var(--accent);box-shadow:var(--shadow-lg);transform:translateY(-1px)}
+  .sampchip b{font-size:12.8px;font-weight:600;line-height:1.3}
+  .sampchip .cd{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+
+  .verdict{display:grid;grid-template-columns:auto 1fr;gap:22px;align-items:center;
+    background:linear-gradient(160deg,#0d1424,#131c31 60%,#1a2540);color:#eaf0fb;
+    border-radius:14px;padding:22px 24px;margin-bottom:16px;box-shadow:var(--shadow-lg)}
+  .vgauge{text-align:center;min-width:150px}
+  .vdecision{font-size:23px;font-weight:800;letter-spacing:-.01em;line-height:1.05;padding:8px 16px;
+    border-radius:11px;display:inline-block}
+  .vd-go{background:#0f2f22;color:#4ade80;border:1px solid #1f5c40}
+  .vd-nogo{background:#3a1519;color:#fb7185;border:1px solid #6d2530}
+  .vd-more{background:#3a2c12;color:#fbbf24;border:1px solid #6d5320}
+  .vconf{margin-top:12px}
+  .vconf .ring{--p:0;width:96px;height:96px;border-radius:50%;margin:0 auto;
+    background:conic-gradient(currentColor calc(var(--p)*1%),#28324a 0);display:grid;place-items:center}
+  .vconf .ring i{width:76px;height:76px;border-radius:50%;background:#111a2e;display:grid;place-items:center;
+    font-size:22px;font-weight:800;color:#fff;font-style:normal}
+  .vconf .cl{font-size:10.5px;color:#8ba0c2;text-transform:uppercase;letter-spacing:.05em;margin-top:7px}
+  .vmeta h1{margin:0 0 4px;font-size:18px;font-weight:700;letter-spacing:-.02em}
+  .vmeta .vtype{display:inline-block;font-size:10.5px;font-weight:700;text-transform:uppercase;
+    letter-spacing:.05em;background:rgba(255,255,255,.12);padding:2px 9px;border-radius:6px;margin-bottom:8px}
+  .vmeta p{margin:0 0 12px;color:#c7d3e6;font-size:13px;line-height:1.5}
+  .vrisks{display:flex;gap:16px;flex-wrap:wrap}
+  .vrisk{font-size:11px;color:#8ba0c2}
+  .vrisk b{display:block;font-size:13px;font-weight:700;margin-top:2px}
+  .rk-low{color:#4ade80}.rk-medium{color:#fbbf24}.rk-high{color:#fb7185}
+  .rk-fit{color:#93c5fd}
+
+  .stratgrid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:960px){.stratgrid{grid-template-columns:1fr}.verdict{grid-template-columns:1fr;text-align:center}}
+  .seatrow td{vertical-align:middle}
+  .seat-benched td{opacity:.5}
+  .barcell{min-width:120px}
+  .minibar{height:8px;border-radius:5px;background:var(--soft);overflow:hidden;display:inline-block;
+    width:70px;vertical-align:middle;margin-right:7px}
+  .minibar i{display:block;height:100%;border-radius:5px}
+  .bar-risk i{background:var(--high)} .bar-conv i{background:var(--accent)}
+  .barval{font-weight:700;font-variant-numeric:tabular-nums;font-size:12.5px}
+  th.sortable{cursor:pointer;user-select:none} th.sortable:hover{color:var(--accent)}
+  th.sortable.act{color:var(--accent)}
+  .seatname{display:flex;align-items:center;gap:8px}
+  .seatname svg{width:17px;height:17px;stroke:var(--muted);fill:none;stroke-width:1.7;flex:none}
+  .seatname b{font-weight:600} .seatname .rl{font-size:11px;color:var(--dim)}
+  .chip-staffed{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;
+    padding:2px 6px;border-radius:5px;background:#e7f6ef;color:var(--low)}
+  .chip-bench{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;
+    padding:2px 6px;border-radius:5px;background:var(--soft);color:var(--muted)}
+
+  /* risk vs conviction scatter */
+  .scatter{position:relative;height:230px;border:1px solid var(--line);border-radius:10px;
+    background:linear-gradient(#fff,#fff);margin-top:6px}
+  .scatter .ax{position:absolute;font-size:10px;color:var(--dim)}
+  .scatter .grid-x,.scatter .grid-y{position:absolute;background:var(--line)}
+  .scatter .dot{position:absolute;width:34px;height:34px;border-radius:50%;transform:translate(-50%,50%);
+    display:grid;place-items:center;font-size:9px;font-weight:700;color:#fff;box-shadow:var(--shadow);
+    cursor:default}
+  .scatter .quad{position:absolute;font-size:9.5px;color:var(--dim);font-weight:600;opacity:.6}
+
+  .atk-sev{display:inline-block;width:46px;height:8px;border-radius:5px;background:var(--soft);overflow:hidden;
+    vertical-align:middle;margin-right:8px}
+  .atk-sev i{display:block;height:100%;background:var(--high)}
+  .db-flag{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;
+    background:#fdeaea;color:var(--critical);padding:2px 7px;border-radius:5px;margin-left:6px}
+  .killshot{background:#fdeaea;border:1px solid #f5c9c9;border-radius:10px;padding:12px 14px;
+    font-size:13px;color:#8a1c1c;margin-top:12px}
+  .killshot b{color:#611414}
+
+  .auditbar{display:flex;height:22px;border-radius:7px;overflow:hidden;border:1px solid var(--line);margin:4px 0 12px}
+  .auditbar div{display:grid;place-items:center;font-size:10.5px;font-weight:700;color:#fff}
+  .au-verified{background:#059669}.au-weak{background:#d97706}.au-spec{background:#9333ea}.au-unsup{background:#dc2626}
+  .auditkey{display:flex;gap:14px;flex-wrap:wrap;font-size:11px;color:var(--muted);margin-bottom:10px}
+  .auditkey span{display:inline-flex;align-items:center;gap:5px}
+  .auditkey i{width:9px;height:9px;border-radius:2px;display:inline-block}
+
+  .vote-go{color:var(--low)}.vote-nogo{color:var(--critical)}.vote-more{color:var(--medium)}.vote-cond{color:var(--accent)}
+  .votebadge{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;padding:2px 8px;border-radius:6px}
+  .vb-go{background:#e7f6ef;color:var(--low)}.vb-nogo{background:#fdeaea;color:var(--critical)}
+  .vb-more{background:#fdf1e1;color:var(--medium)}.vb-cond{background:var(--accent-soft);color:var(--accent)}
+  .conds li{margin-bottom:6px}
+  .stratnotice{background:var(--accent-soft);border:1px solid #d3e2ff;border-radius:10px;padding:14px 16px;
+    color:#1e40af;font-size:13px;margin-bottom:16px}
+
   @media(max-width:900px){.dash,.two,.graphwrap{grid-template-columns:1fr}
     .sidebar{position:static}svg{height:400px}.grid{grid-template-columns:1fr}}
 </style>
@@ -428,6 +517,7 @@
     <button class="step" id="s2" onclick="go(2)" disabled><span class="dot">2</span> Risk dashboard</button>
     <button class="step" id="s3" onclick="go(3)" disabled><span class="dot">3</span> Network drill-down</button>
     <button class="step" id="s5" onclick="go(5)" disabled><span class="dot">&#9671;</span> Agent crew</button>
+    <button class="step" id="s6" onclick="go(6)"><span class="dot">&#9878;</span> Strategy board</button>
     <button class="step" id="s4" onclick="go(4)"><span class="dot">&#8734;</span> API &amp; MCP</button>
   </nav>
 </header>
@@ -769,6 +859,25 @@
       <button class="ghost" onclick="go(1)">New investigation</button>
     </div>
   </section>
+
+  <!-- 6 · STRATEGY BOARD -->
+  <section class="view" id="view6">
+    <div class="card">
+      <h2>Executive decision board</h2>
+      <p class="lede" style="margin-bottom:14px">Ask one high-stakes business question - an acquisition,
+        a market entry, a launch. An autonomous board frames it, staffs specialist seats, runs an
+        adversarial review and an evidence audit, then votes a <b>GO / NO-GO / MORE INFORMATION REQUIRED</b>
+        with a calibrated confidence score. Ported from the StrategyOS agent crew.</p>
+      <div class="stratbar">
+        <input id="stratQ" placeholder="Should Salesforce acquire Notion?"
+               onkeydown="if(event.key==='Enter')runStrategy()" />
+        <button class="primary" id="stratRun" onclick="runStrategy()">Convene board</button>
+        <span class="status" id="stratStatus"></span>
+      </div>
+      <div class="sampchips" id="sampChips"></div>
+    </div>
+    <div id="stratResult"></div>
+  </section>
 </main>
 
 <script>
@@ -870,11 +979,12 @@ function afterData(msg){
 }
 function go(step){
   if((step===2||step===3||step===5)&&!DATA)return;
-  [1,2,3,4,5].forEach(i=>{$("view"+i).classList.toggle("on",i===step);
+  [1,2,3,4,5,6].forEach(i=>{$("view"+i).classList.toggle("on",i===step);
     $("s"+i).classList.toggle("active",i===step);$("s"+i).classList.toggle("done",i<step&&i<4);});
   if(step===3)setGraph(GRAPH);
   if(step===4)renderConnectors();
   if(step===5)renderCrew();
+  if(step===6)initStrategy();
   window.scrollTo({top:0,behavior:"smooth"});
 }
 
@@ -974,6 +1084,189 @@ function paintCrew(animate){
     CREW_TIMERS.push(setTimeout(()=>{const el=cards[i];
       el.classList.remove("running");el.classList.add(a.result.status);setChip(el,a.result.status);},i*STAG+RUN));
   });
+}
+
+/* strategy board */
+const SEAT_ICONS={
+  market:'<path d="M4 20V11M9 20V5M14 20v-8M19 20V8"/>',
+  finance:'<path d="M12 3v18M8 7h6a3 3 0 0 1 0 6H8.5a3 3 0 0 0 0 6H16"/>',
+  tech:'<rect x="3.5" y="4.5" width="17" height="12" rx="1.5"/><path d="M8 20h8M12 16.5V20"/>',
+  competition:'<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.4"/><path d="M12 4v3M12 17v3M4 12h3M17 12h3"/>',
+  legal:'<path d="M12 3v18M6 20h12M5 7h14M8 3.5L5 7M8 3.5L19 7M5 7l-2.5 5a2.6 2.6 0 0 0 5 0zM19 7l-2.5 5a2.6 2.6 0 0 0 5 0z"/>',
+};
+let STRAT=null,STRAT_SORT={key:"risk_score",dir:-1};
+function decColor(d){return d==="GO"?"var(--low)":d==="NO-GO"?"var(--critical)":"var(--medium)";}
+function decClass(d){return d==="GO"?"vd-go":d==="NO-GO"?"vd-nogo":"vd-more";}
+function riskClass(l){return "rk-"+String(l||"").toLowerCase();}
+function voteClass(v){v=String(v||"").toUpperCase();
+  return v==="GO"?"vb-go":v.startsWith("NO")?"vb-nogo":v.includes("CONDITIONAL")?"vb-cond":"vb-more";}
+
+async function initStrategy(){
+  if($("sampChips").children.length)return;
+  try{
+    const r=await fetch("/api/v1/strategy/samples");const d=await r.json();
+    $("sampChips").innerHTML=`<span class="dim" style="font-size:11.5px;align-self:center;margin-right:2px">Try a sample:</span>`+
+      d.samples.map(s=>`<button class="sampchip" onclick="loadStratSample('${s.id}')">
+        <b>${esc(s.question)}</b>
+        <span class="cd" style="color:${decColor(s.decision)}">${esc(s.decision)} &middot; ${s.confidence}%</span>
+      </button>`).join("");
+  }catch(e){}
+}
+async function loadStratSample(id){
+  $("stratStatus").className="status";$("stratStatus").textContent="Loading board…";
+  try{
+    const r=await fetch("/api/v1/strategy/sample/"+id);if(!r.ok)throw new Error(r.statusText);
+    STRAT=await r.json();$("stratQ").value=STRAT.question;$("stratStatus").textContent="";renderStrategy();
+  }catch(e){$("stratStatus").className="status err";$("stratStatus").textContent="Failed: "+e.message;}
+}
+async function runStrategy(){
+  const q=$("stratQ").value.trim();
+  if(q.length<6){$("stratStatus").className="status err";$("stratStatus").textContent="Enter a decision question.";return;}
+  $("stratRun").disabled=true;$("stratStatus").className="status";
+  $("stratStatus").textContent="Convening the board…";
+  try{
+    const r=await fetch("/api/v1/strategy/decide",{method:"POST",
+      headers:{"Content-Type":"application/json"},body:JSON.stringify({question:q})});
+    if(!r.ok)throw new Error((await r.json().catch(()=>({}))).detail||r.statusText);
+    STRAT=await r.json();$("stratStatus").textContent="";renderStrategy();
+  }catch(e){$("stratStatus").className="status err";$("stratStatus").textContent="Failed: "+e.message;}
+  finally{$("stratRun").disabled=false;}
+}
+function sortSeats(key){
+  if(STRAT_SORT.key===key)STRAT_SORT.dir*=-1;else STRAT_SORT={key,dir:-1};
+  renderStrategy();
+}
+function renderStrategy(){
+  const el=$("stratResult");if(!STRAT){el.innerHTML="";return;}
+  if(STRAT.available===false){
+    el.innerHTML=`<div class="stratnotice">${esc(STRAT.notice||"Live board unavailable.")}</div>`;
+    return;
+  }
+  const v=STRAT.verdict,seats=STRAT.seats||[];
+  const staffed=seats.filter(s=>s.staffed);
+  // verdict header
+  const conf=v.confidence||0;
+  let html=`<div class="verdict" style="color:${decColor(v.decision)}">
+    <div class="vgauge">
+      <span class="vdecision ${decClass(v.decision)}">${esc(v.decision)}</span>
+      <div class="vconf"><div class="ring" style="--p:${conf}"><i>${conf}%</i></div>
+        <div class="cl">Confidence</div></div>
+    </div>
+    <div class="vmeta">
+      <span class="vtype">${esc(STRAT.decision_type||"decision")}</span>
+      <h1>${esc(STRAT.question||"")}</h1>
+      <p>${esc((v.chair_summary||"").trim())}</p>
+      <div class="vrisks">
+        <div class="vrisk">Strategic fit<b class="rk-fit">${v.strategic_fit}/10</b></div>
+        <div class="vrisk">Financial risk<b class="${riskClass(v.financial_risk)}">${esc(v.financial_risk)}</b></div>
+        <div class="vrisk">Regulatory risk<b class="${riskClass(v.regulatory_risk)}">${esc(v.regulatory_risk)}</b></div>
+        <div class="vrisk">Execution risk<b class="${riskClass(v.execution_risk)}">${esc(v.execution_risk)}</b></div>
+      </div>
+    </div></div>`;
+
+  // stakes + success criteria + board vote (top row)
+  html+=`<div class="stratgrid">
+    <div class="card"><h2>Mandate</h2>
+      <div class="kv"><div>Stakes</div><div>${esc(STRAT.stakes||"-")}</div></div>
+      <h2 style="margin-top:14px">Success criteria &middot; 24 months</h2>
+      <ol style="margin:0;padding-left:18px;font-size:13px;line-height:1.6">
+        ${(STRAT.success_criteria||[]).map(c=>`<li>${esc(c)}</li>`).join("")}</ol></div>
+    <div class="card"><h2>Board vote</h2>
+      <table><tbody>
+      ${(STRAT.board_vote||[]).map(m=>`<tr>
+        <td style="width:120px"><b>${esc(m.member)}</b></td>
+        <td style="width:130px"><span class="votebadge ${voteClass(m.vote)}">${esc(m.vote)}</span></td>
+        <td class="dim">${esc(m.rationale)}</td></tr>`).join("")}
+      </tbody></table>
+      ${(STRAT.conditions||[]).length?`<h2 style="margin-top:14px">Conditions</h2>
+        <ul class="conds" style="margin:0;padding-left:18px;font-size:12.8px">
+        ${STRAT.conditions.map(c=>`<li>${esc(c)}</li>`).join("")}</ul>`:""}
+    </div></div>`;
+
+  // specialist seats table (sortable) + scatter
+  const sorted=[...seats].sort((a,b)=>{
+    const k=STRAT_SORT.key;
+    if(k==="seat")return STRAT_SORT.dir*String(a.seat).localeCompare(b.seat);
+    if(k==="staffed")return STRAT_SORT.dir*((a.staffed?1:0)-(b.staffed?1:0));
+    return STRAT_SORT.dir*(((a[k]||0)-(b[k]||0)));
+  });
+  const sk=STRAT_SORT.key,ar=STRAT_SORT.dir<0?"↓":"↑";
+  const seatIcon=s=>`<svg viewBox="0 0 24 24">${SEAT_ICONS[s.icon]||""}</svg>`;
+  html+=`<div class="card"><h2>Specialist seats &middot; sorted by ${esc(sk.replace("_"," "))}</h2>
+    <table><thead><tr>
+      <th class="sortable ${sk==="seat"?"act":""}" onclick="sortSeats('seat')">Seat ${sk==="seat"?ar:""}</th>
+      <th>Headline</th>
+      <th class="sortable ${sk==="risk_score"?"act":""}" onclick="sortSeats('risk_score')" style="width:130px">Risk ${sk==="risk_score"?ar:""}</th>
+      <th class="sortable ${sk==="conviction"?"act":""}" onclick="sortSeats('conviction')" style="width:130px">Conviction ${sk==="conviction"?ar:""}</th>
+    </tr></thead><tbody>
+    ${sorted.map(s=>{
+      if(!s.staffed)return `<tr class="seatrow seat-benched">
+        <td><div class="seatname">${seatIcon(s)}<b>${esc(s.seat)}</b></div>
+          <div class="rl">${esc(s.role||"")}</div></td>
+        <td colspan="3"><span class="chip-bench">Benched</span>
+          <span class="dim" style="margin-left:8px">${esc(s.bench_reason||"Not staffed.")}</span></td></tr>`;
+      return `<tr class="seatrow">
+        <td><div class="seatname">${seatIcon(s)}<b>${esc(s.seat)}</b> <span class="chip-staffed">Staffed</span></div>
+          <div class="rl">${esc(s.role||"")}</div></td>
+        <td>${esc(s.headline||"")}
+          ${(s.risks||[]).length?`<div class="dim" style="font-size:11.5px;margin-top:4px">Risks: ${esc((s.risks||[]).join("; "))}</div>`:""}</td>
+        <td class="barcell"><span class="minibar bar-risk"><i style="width:${(s.risk_score||0)*10}%"></i></span><span class="barval">${s.risk_score}</span></td>
+        <td class="barcell"><span class="minibar bar-conv"><i style="width:${(s.conviction||0)*10}%"></i></span><span class="barval">${s.conviction}</span></td>
+      </tr>`;}).join("")}
+    </tbody></table></div>`;
+
+  // scatter: risk (x) vs conviction (y)
+  html+=`<div class="stratgrid">
+    <div class="card"><h2>Risk vs conviction by seat</h2>
+      <p class="dim" style="font-size:11.5px;margin:0 0 4px">Top-left = high conviction, low risk (act on it).
+        Bottom-right = low conviction, high risk (danger).</p>
+      <div class="scatter" id="scatter">
+        <div class="quad" style="left:8px;top:8px">high conviction / low risk</div>
+        <div class="quad" style="right:8px;bottom:22px;text-align:right">low conviction / high risk</div>
+        <div class="ax" style="left:8px;bottom:4px">risk &rarr;</div>
+        <div class="ax" style="left:4px;top:6px;writing-mode:vertical-rl">conviction &rarr;</div>
+        ${staffed.map(s=>`<div class="dot" title="${esc(s.seat)}: risk ${s.risk_score}, conviction ${s.conviction}"
+          style="left:${6+(s.risk_score||0)*8.8}%;bottom:${6+(s.conviction||0)*8.4}%;background:${dotColor(s)}">${esc(s.seat.slice(0,3))}</div>`).join("")}
+      </div></div>
+    <div class="card"><h2>Evidence audit</h2>
+      ${renderAudit(STRAT.evidence_audit)}</div></div>`;
+
+  // adversarial review
+  const atks=STRAT.attacks||[];
+  html+=`<div class="card"><h2>Adversarial review &middot; ${atks.length} attacks, ranked</h2>
+    <table><thead><tr><th style="width:150px">Severity</th><th>Target</th><th>Claim attacked</th><th>Why it breaks</th></tr></thead>
+    <tbody>${atks.map(a=>`<tr>
+      <td><span class="atk-sev"><i style="width:${(a.severity||0)*10}%"></i></span><span class="barval">${a.severity}</span>
+        ${a.deal_breaker?`<span class="db-flag">Deal breaker</span>`:""}</td>
+      <td class="dim">${esc(a.target_seat)}</td>
+      <td>${esc(a.claim_attacked)}</td>
+      <td class="dim">${esc(a.why_it_breaks)}</td></tr>`).join("")}</tbody></table>
+    ${STRAT.kill_shot?`<div class="killshot"><b>Kill shot:</b> ${esc(STRAT.kill_shot)}</div>`:""}
+    ${STRAT.would_change_mind?`<p class="dim" style="font-size:12.5px;margin:10px 0 0"><b>Would change the verdict:</b> ${esc(STRAT.would_change_mind)}</p>`:""}
+    </div>`;
+
+  html+=`<p class="dim" style="font-size:11.5px;margin:2px 2px 8px">Generated by: ${esc(STRAT.generated_by||"-")}.
+    ${STRAT.generated_by&&STRAT.generated_by.indexOf("sample")>=0?"Illustrative scenario - figures are estimates. Set an LLM key to run any question live with sourced analysis.":""}</p>`;
+  el.innerHTML=html;
+}
+function dotColor(s){
+  const net=(s.conviction||0)-(s.risk_score||0);
+  return net>=3?"#059669":net>=0?"#2563eb":net>=-3?"#d97706":"#dc2626";
+}
+function renderAudit(a){
+  if(!a)return `<div class="empty">No audit.</div>`;
+  const seg=[["verified_pct","au-verified","Verified"],["weak_pct","au-weak","Weak"],
+    ["speculation_pct","au-spec","Speculation"],["unsupported_pct","au-unsup","Unsupported"]];
+  const bar=seg.map(([k,c])=>{const p=a[k]||0;return p>0?`<div class="${c}" style="width:${p}%">${p}%</div>`:"";}).join("");
+  const key=seg.map(([k,c,l])=>`<span><i class="${c}"></i>${l} ${a[k]||0}%</span>`).join("");
+  const vClass={VERIFIED:"vb-go",WEAK:"vb-more",SPECULATION:"vb-cond",UNSUPPORTED:"vb-nogo"};
+  return `<div class="auditbar">${bar}</div>
+    <div class="auditkey">${key}</div>
+    ${a.integrity_note?`<p class="dim" style="font-size:12.3px;margin:0 0 10px"><b>Integrity note:</b> ${esc(a.integrity_note)}</p>`:""}
+    <table><tbody>${(a.audited_claims||[]).map(c=>`<tr>
+      <td style="width:110px"><span class="votebadge ${vClass[c.verdict]||"vb-more"}">${esc(c.verdict)}</span></td>
+      <td class="dim" style="width:90px">${esc(c.seat)}</td>
+      <td>${esc(c.claim)}${c.reason?` <span class="dim">- ${esc(c.reason)}</span>`:""}</td></tr>`).join("")}</tbody></table>`;
 }
 
 /* dashboard */

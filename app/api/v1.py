@@ -10,12 +10,18 @@ from sqlalchemy import func, select
 from app import crew
 from app import db as database
 from app import demo
+from app import strategy
 from app.models import Investigation
 from app.pipeline import investigate
 from app.agent.insight import connection_insight
 from app.resolution.embeddings import active_backend
 from app.risk.taxonomy import category_labels
-from app.schemas import GraphInsightRequest, InvestigationRequest, InvestigationResponse
+from app.schemas import (
+    GraphInsightRequest,
+    InvestigationRequest,
+    InvestigationResponse,
+    StrategyRequest,
+)
 from app.sources import ofac
 
 log = logging.getLogger(__name__)
@@ -123,6 +129,31 @@ async def crew_trace_stored(investigation_id: int) -> dict:
     if row is None:
         raise HTTPException(status_code=404, detail="investigation not found")
     return crew.trace(row.result)
+
+
+@router.get("/strategy/samples", summary="Sample strategic decisions (offline)")
+async def strategy_samples() -> dict:
+    """Curated example decisions the board tab can render with no LLM key."""
+    return {"samples": strategy.list_samples()}
+
+
+@router.get("/strategy/sample/{sample_id}", summary="A full sample decision")
+async def strategy_sample(sample_id: str) -> dict:
+    from app.strategy.board import get_sample
+
+    try:
+        return get_sample(sample_id)
+    except KeyError:
+        raise HTTPException(status_code=404, detail="unknown sample") from None
+
+
+@router.post("/strategy/decide", summary="Run the executive decision board")
+async def strategy_decide(request: StrategyRequest) -> dict:
+    """Evaluate one high-stakes question and return a board-ready verdict as a
+    structured object (verdict, per-seat scores, ranked attacks, evidence audit,
+    board vote). Runs live via Claude when a key is set, else serves a matching
+    curated sample."""
+    return await strategy.decide(request.question)
 
 
 @router.get("/demo/subjects", summary="Demo subjects (offline sample dataset)")

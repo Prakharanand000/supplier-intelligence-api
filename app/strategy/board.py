@@ -449,6 +449,19 @@ def _risk_band(value, default: str = "MEDIUM") -> str:
     return "HIGH"
 
 
+def _to_list(value) -> list[str]:
+    """Coerce a field that should be a list of strings. A looser model
+    routinely answers a "list of risks" as one semicolon-joined string instead
+    of a JSON array - iterating that directly yields one entry per
+    *character*, which is the exact bug this guards against."""
+    if isinstance(value, list):
+        return [str(x).strip() for x in value if str(x).strip()]
+    if isinstance(value, str):
+        parts = value.split(";") if ";" in value else [value]
+        return [p.strip() for p in parts if p.strip()]
+    return []
+
+
 def _normalize(question: str, raw: dict) -> dict:
     """Fill in a defensible shape for whatever the model actually returned,
     since json_object mode enforces no schema. Every field the UI reads gets
@@ -458,7 +471,7 @@ def _normalize(question: str, raw: dict) -> dict:
 
     d.setdefault("decision_type", "acquisition")
     d.setdefault("stakes", "")
-    criteria = [str(c) for c in (d.get("success_criteria") or []) if c]
+    criteria = _to_list(d.get("success_criteria"))
     d["success_criteria"] = (criteria + [""] * 3)[:3]
 
     v = d.get("verdict") if isinstance(d.get("verdict"), dict) else {}
@@ -489,8 +502,8 @@ def _normalize(question: str, raw: dict) -> dict:
             "headline": str(row.get("headline") or ""),
             "risk_score": _clamp_int(row.get("risk_score"), 0, 10, 0),
             "conviction": _clamp_int(row.get("conviction"), 0, 10, 0),
-            "opportunities": [str(x) for x in (row.get("opportunities") or [])],
-            "risks": [str(x) for x in (row.get("risks") or [])],
+            "opportunities": _to_list(row.get("opportunities")),
+            "risks": _to_list(row.get("risks")),
             "claims": [c for c in (row.get("claims") or []) if isinstance(c, dict)],
         })
     d["seats"] = seats
@@ -547,7 +560,7 @@ def _normalize(question: str, raw: dict) -> dict:
         }
         for member in BOARD_MEMBERS
     ]
-    d["conditions"] = [str(c) for c in (d.get("conditions") or [])]
+    d["conditions"] = _to_list(d.get("conditions"))
     return d
 
 

@@ -96,6 +96,29 @@ def test_normalize_fills_defaults_and_clamps_invalid_values():
     assert members == board.BOARD_MEMBERS  # all 4 present even though only CEO was given
 
 
+def test_normalize_splits_a_semicolon_joined_string_list():
+    # A model sometimes answers a "list of strings" field with one
+    # semicolon-joined string instead of a JSON array. Iterating that string
+    # directly yields one entry per *character* - the exact bug this covers.
+    out = board._normalize(
+        "Q?",
+        {
+            "seats": [{
+                "seat": "Market", "staffed": True,
+                "risks": "Competitors moving fast; regulatory scrutiny",
+                "opportunities": "Strong demand",
+            }],
+            "success_criteria": "a; b; c",
+            "conditions": "Cap spend; Get legal sign-off",
+        },
+    )
+    market = out["seats"][0]
+    assert market["risks"] == ["Competitors moving fast", "regulatory scrutiny"]
+    assert market["opportunities"] == ["Strong demand"]
+    assert out["success_criteria"] == ["a", "b", "c"]
+    assert out["conditions"] == ["Cap spend", "Get legal sign-off"]
+
+
 def test_normalize_scales_a_fractional_confidence_to_percent():
     # Weaker models routinely answer "confidence: 0-100" with a 0-1 probability
     # instead (e.g. 0.75 for "75% sure"). No real board confidence is 1%, so

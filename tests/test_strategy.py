@@ -50,7 +50,7 @@ def test_match_maps_questions_to_samples():
 def test_decide_without_key_returns_matching_sample():
     out = asyncio.run(strategy.decide("Should Salesforce acquire Notion?"))
     assert out["verdict"]["decision"] == "NO-GO"
-    assert "no ANTHROPIC_API_KEY" in out["generated_by"]
+    assert "no live LLM key configured" in out["generated_by"]
 
 
 def test_decide_without_key_and_no_match_is_a_structured_notice():
@@ -65,3 +65,53 @@ def test_list_samples_are_lightweight_cards():
     assert {c["id"] for c in cards} == set(samples.SAMPLES)
     for c in cards:
         assert set(c) == {"id", "question", "decision", "confidence", "decision_type"}
+
+
+def test_normalize_fills_defaults_and_clamps_invalid_values():
+    raw = {
+        "verdict": {"decision": "GO", "confidence": "82", "regulatory_risk": "not-a-level"},
+        "seats": [{"seat": "Market", "staffed": True, "risk_score": 4, "conviction": 7}],
+        "attacks": [{"severity": 99, "target_seat": "Market", "claim_attacked": "c"}],
+        "board_vote": [{"member": "CEO", "vote": "GO", "rationale": "r"}],
+    }
+    out = board._normalize("Q?", raw)
+    assert out["verdict"]["confidence"] == 82  # coerced from string
+    assert out["verdict"]["regulatory_risk"] == "MEDIUM"  # invalid enum -> safe default
+    assert out["attacks"][0]["severity"] == 10  # clamped to the 0-10 range
+    seat_keys = [s["seat"] for s in out["seats"]]
+    assert seat_keys == [s["key"] for s in board.SEATS]  # all 5 present, in order
+    assert out["seats"][0]["staffed"] is True
+    assert out["seats"][1]["staffed"] is False  # unstaffed seats default sanely
+    members = [v["member"] for v in out["board_vote"]]
+    assert members == board.BOARD_MEMBERS  # all 4 present even though only CEO was given
+
+
+def test_decide_prefers_openai_when_key_is_set(monkeypatch):
+    monkeypatch.setattr(board.settings, "openai_api_key", "sk-test")
+
+    async def fake_call(system, user):
+        return {
+            "raw": {
+                "verdict": {"decision": "NO-GO", "confidence": 40},
+                "seats": [], "attacks": [], "board_vote": [],
+            },
+            "generated_by": "gpt-4o-mini",
+            "usage": {"input_tokens": 10, "output_tokens": 20},
+        }
+
+    monkeypatch.setattr(board, "_call_openai_chat", fake_call)
+    out = asyncio.run(strategy.decide("Should Acme buy Globex?"))
+    assert out["generated_by"] == "gpt-4o-mini"
+    assert out["verdict"]["decision"] == "NO-GO"
+
+
+def test_decide_falls_back_to_sample_when_openai_call_fails(monkeypatch):
+    monkeypatch.setattr(board.settings, "openai_api_key", "sk-test")
+
+    async def failing_call(system, user):
+        raise RuntimeError("network down")
+
+    monkeypatch.setattr(board, "_call_openai_chat", failing_call)
+    out = asyncio.run(strategy.decide("Should Salesforce acquire Notion?"))
+    assert out["verdict"]["decision"] == "NO-GO"
+    assert "no live LLM key configured" in out["generated_by"]

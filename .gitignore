@@ -27,6 +27,9 @@ data/
 .idea/
 .DS_Store
 Thumbs.db
+~$*.docx
+~$*.pptx
+~$*.xlsx
 
 # Claude Code local config
 .claude/

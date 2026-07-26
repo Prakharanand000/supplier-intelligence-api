@@ -697,7 +697,6 @@
     <div class="tabs">
       <button class="tab on" id="gt0" onclick="setGraph('resolution')">Entity resolution</button>
       <button class="tab" id="gt1" onclick="setGraph('network')">Connections network</button>
-      <button class="tab" id="gt2" onclick="setGraph('transactions')">Transaction network</button>
     </div>
     <p class="dim" style="font-size:12.5px;margin:-4px 0 14px" id="graphHint">
       Drag nodes to arrange &middot; scroll to zoom &middot; drag the background to pan &middot;
@@ -850,7 +849,6 @@
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const num=n=>n==null?"-":n.toLocaleString(undefined,{maximumFractionDigits:0});
-const money=n=>n==null?"-":"$"+n.toLocaleString(undefined,{maximumFractionDigits:0});
 
 const CATEGORIES=[
   {key:"financial_crime",label:"Financial Crime",color:"#c2410c"},
@@ -1203,7 +1201,7 @@ function renderAudit(a){
 
 /* dashboard */
 function renderDashboard(){
-  const d=DATA,s=d.supplier,r=d.risk,ms=d.media_summary,t=d.transactions;
+  const d=DATA,s=d.supplier,r=d.risk,ms=d.media_summary;
   const catCount=Object.fromEntries(CATEGORIES.map(c=>[c.key,0]));
   (ms.categories||[]).forEach(c=>catCount[c.key]=c.count);
 
@@ -1218,7 +1216,6 @@ function renderDashboard(){
         ${d.sanctions.match?"MATCH":"No match"}</div>
       <div>Adverse media</div><div>${ms.total} articles</div>
       <div>Litigation</div><div>${(d.litigation.cases||[]).length} dockets</div>
-      <div>Insider txns</div><div>${t.available?t.summary.count:0}</div>
       <div>Recommendation</div><div><b>${esc((d.agent_summary||{}).recommendation||"")}</b></div></div>`;
 
   // left category filters
@@ -1419,7 +1416,7 @@ const SVGNS="http://www.w3.org/2000/svg";
 const TYPE_STYLE={
   query:{c:"#2563eb",r:16,l:"Search subject"},selected:{c:"#059669",r:15,l:"Selected identity"},
   match:{c:"#7c3aed",r:12,l:"Above threshold"},rejected:{c:"#94a3b8",r:9,l:"Rejected candidate"},
-  entity:{c:"#2563eb",r:17,l:"Subject entity"},issuer:{c:"#2563eb",r:16,l:"Issuer"},
+  entity:{c:"#2563eb",r:17,l:"Subject entity"},
   person:{c:"#d97706",r:12,l:"Person"},holding:{c:"#7c3aed",r:14,l:"Holding / parent"},
   parent:{c:"#7c3aed",r:13,l:"Corporate parent"},company:{c:"#0d9488",r:13,l:"External firm"},
   trust:{c:"#8b5cf6",r:12,l:"Trust / family office"}};
@@ -1435,7 +1432,6 @@ const TYPE_ICON={
   match:[["rect",{x:5,y:9,width:14,height:11}],["path",{d:"M9 9V6a3 3 0 0 1 6 0v3"}]],
   rejected:[["path",{d:"M9 9l6 6M15 9l-6 6"}]],
   entity:[["rect",{x:5,y:5,width:14,height:16}],["path",{d:"M9 21v-5h6v5"}],["path",{d:"M8 9h2M14 9h2M8 13h2M14 13h2"}]],
-  issuer:[["rect",{x:5,y:5,width:14,height:16}],["path",{d:"M9 21v-5h6v5"}],["path",{d:"M8 9h2M14 9h2M8 13h2M14 13h2"}]],
   person:[["circle",{cx:12,cy:8.5,r:3.2}],["path",{d:"M5.5 20c1-4 4-6 6.5-6s5.5 2 6.5 6"}]],
   holding:[["path",{d:"M4 10l8-5 8 5"}],["path",{d:"M5 10v9M9 10v9M15 10v9M19 10v9"}],["path",{d:"M4 19h16"}]],
   parent:[["path",{d:"M4 10l8-5 8 5"}],["path",{d:"M5 10v9M9 10v9M15 10v9M19 10v9"}],["path",{d:"M4 19h16"}]],
@@ -1461,8 +1457,8 @@ const Graph={
     window.addEventListener("mousemove",e=>this.onMove(e));
     window.addEventListener("mouseup",()=>this.onUp());},
 
-  isCenter(n){return n.center===true||n.id==="query"||n.id==="issuer"||n.id==="entity";},
-  edgeColor(e){return e.kind==="transaction"?(e.direction==="acquired"?"#059669aa":"#ea580caa"):"#b6c0cf";},
+  isCenter(n){return n.center===true||n.id==="query"||n.id==="entity";},
+  edgeColor(){return "#b6c0cf";},
   edgeW(e){return 1+(e.confidence||e.weight||0.3)*2.4;},
 
   load(kind){this.kind=kind;this.selNode=this.selEdge=this.hoverId=null;
@@ -1478,7 +1474,7 @@ const Graph={
     this.renderDom();this.updateLegend();this.reheat(1.0);
     $("side").innerHTML=`<div class="empty">Select a node or connection to inspect it.</div>`;},
 
-  showEmpty(){this.svg.innerHTML=`<text x="450" y="260" text-anchor="middle" fill="#8b94a3" font-size="13">${this.kind==="transactions"?esc((DATA.transactions&&DATA.transactions.note)||"No transaction data."):"No graph data."}</text>`;
+  showEmpty(){this.svg.innerHTML=`<text x="450" y="260" text-anchor="middle" fill="#8b94a3" font-size="13">No graph data.</text>`;
     $("side").innerHTML=`<div class="empty">Nothing to inspect.</div>`;$("legend").innerHTML="";},
 
   renderDom(){const svg=this.svg;svg.innerHTML="";
@@ -1601,10 +1597,6 @@ const Graph={
       ${n.confidence!=null?`<div>Confidence</div><div>${n.confidence.toFixed(2)}<div class="bar"><i style="width:${Math.round(n.confidence*100)}%"></i></div></div>`:""}</div>`;
     if(n.breakdown&&Object.keys(n.breakdown).length){h+=`<div style="margin-top:12px"><h2>Match features</h2><div class="kv">`+
       Object.entries(n.breakdown).map(([k,v])=>`<div>${esc(k)}</div><div>${v.toFixed(2)}<div class="bar"><i style="width:${Math.round(v*100)}%"></i></div></div>`).join("")+`</div></div>`;}
-    const tx=linked.find(e=>e.kind==="transaction");
-    if(tx){h+=`<div style="margin-top:12px"><h2>Filed transactions</h2><div class="kv">
-      <div>Count</div><div>${tx.count}</div><div>Acquired</div><div>${money(tx.acquired_value)}</div>
-      <div>Disposed</div><div>${money(tx.disposed_value)}</div></div></div>`;}
     if(linked.length){h+=`<div style="margin-top:12px"><h2>Connections (${linked.length})</h2><div class="neigh">`+
       linked.map(e=>{const other=e.source===n.id?e.target:e.source,on=this.byId[other];
         return `<a onclick="Graph.selectNode('${esc(other)}')">${esc(on?on.label:other)} <span class="dim">· ${esc(e.relationship||e.label||"")}</span></a>`;}).join("")+`</div></div>`;}
@@ -1640,7 +1632,7 @@ const Graph={
 };
 
 function setGraph(kind){GRAPH=kind;
-  ["resolution","network","transactions"].forEach((k,i)=>$("gt"+i).classList.toggle("on",k===kind));
+  ["resolution","network"].forEach((k,i)=>$("gt"+i).classList.toggle("on",k===kind));
   Graph.load(kind);renderGraphDetail();
   $("graphHint").innerHTML=kind==="network"
     ? "Drag nodes to arrange &middot; scroll to zoom &middot; drag background to pan &middot; click a node then <b>Expand connections</b> to reveal more, or click any connection line for an AI insight."
@@ -1656,24 +1648,11 @@ function renderGraphDetail(){
         <td>${c.confidence.toFixed(2)}<div class="bar"><i style="width:${Math.round(c.confidence*100)}%"></i></div></td>
         <td class="dim">${Object.entries(c.confidence_breakdown||{}).map(([k,v])=>`${esc(k)} ${v.toFixed(2)}`).join(" · ")}</td></tr>`).join("")}</table>
       <div class="dim" style="margin-top:9px;font-size:12px">Embeddings: ${esc(er.embedding_backend)} · ${er.candidates_considered} candidates · threshold ${er.match_threshold}</div>`:`<div class="empty">No candidates.</div>`;
-  }else if(GRAPH==="network"){$("detailTitle").textContent="Related parties";
+  }else{$("detailTitle").textContent="Related parties";
     $("graphDetail").innerHTML=d.ownership.length?`<table><tr><th>Name</th><th>Role</th><th>Relationship</th><th>Source</th><th>Conf.</th></tr>
       ${d.ownership.map(o=>`<tr><td>${esc(o.name)}</td><td class="dim">${esc(o.role)}</td>
         <td class="dim">${esc(o.relationship_type)}</td><td class="dim">${esc(o.source)}</td><td>${(o.confidence??0).toFixed(2)}</td></tr>`).join("")}</table>`:`<div class="empty">No related parties.</div>`;
-  }else{const t=d.transactions;$("detailTitle").textContent="SEC Form 4 insider transactions";
-    if(!t.available){$("graphDetail").innerHTML=`<div class="empty">${esc(t.note)}</div>`;return;}
-    const s=t.summary;
-    $("graphDetail").innerHTML=`<div class="tiles" style="margin-bottom:12px">
-        <div class="tile"><div class="k">Transactions</div><div class="v">${s.count}</div><div class="s">${esc(s.earliest)} to ${esc(s.latest)}</div></div>
-        <div class="tile"><div class="k">Insiders</div><div class="v">${s.insiders}</div></div>
-        <div class="tile"><div class="k">Acquired</div><div class="v" style="font-size:18px;color:var(--low)">${money(s.acquired_value)}</div><div class="s">${s.acquired_count} txns</div></div>
-        <div class="tile"><div class="k">Disposed</div><div class="v" style="font-size:18px;color:var(--high)">${money(s.disposed_value)}</div><div class="s">${s.disposed_count} txns</div></div></div>
-      <table><tr><th>Date</th><th>Insider</th><th>Type</th><th>Direction</th><th>Shares</th><th>Value</th></tr>
-        ${t.records.slice(0,40).map(x=>`<tr><td class="dim">${esc(x.date)}</td>
-          <td>${x.filing_url?`<a href="${esc(x.filing_url)}" target="_blank" rel="noopener">${esc(x.insider)}</a>`:esc(x.insider)}</td>
-          <td class="dim">${esc(x.code_label)}</td><td><span class="badge ${x.direction==="acquired"?"b-low":"b-high"}">${esc(x.direction)}</span></td>
-          <td>${num(x.shares)}</td><td>${money(x.value)}</td></tr>`).join("")}</table>
-      <div class="dim" style="margin-top:9px;font-size:12px">Reported securities transactions filed on SEC Form 4 - actual filings, not inferred payment flows.</div>`;}
+  }
 }
 /* ---- world map hero: stylized dot grid with sanctions / PEP markers ---- */
 function buildWorldMap(){

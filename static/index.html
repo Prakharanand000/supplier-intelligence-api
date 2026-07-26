@@ -129,6 +129,12 @@
   main{max-width:1280px;margin:0 auto;padding:26px 24px 80px}
   .view{display:none} .view.on{display:block;animation:fade .25s ease}
   @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+  .modeseg{display:flex;gap:4px;background:var(--soft);border:1px solid var(--line);border-radius:11px;
+    padding:4px;max-width:460px;margin:0 auto 20px}
+  .modeseg button{flex:1;background:none;border:0;color:var(--muted);padding:10px 14px;border-radius:8px;
+    cursor:pointer;font:inherit;font-size:13.5px;font-weight:600}
+  .modeseg button.on{background:#fff;color:var(--ink);box-shadow:var(--shadow)}
+  .mode-panel{display:none} .mode-panel.on{display:block;animation:fade .25s ease}
   .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
     padding:18px 20px;margin-bottom:16px;box-shadow:var(--shadow)}
 
@@ -378,6 +384,46 @@
   .rk-low{color:#4ade80}.rk-medium{color:#fbbf24}.rk-high{color:#fb7185}
   .rk-fit{color:#93c5fd}
 
+  /* mission control */
+  .missionhead{background:linear-gradient(160deg,#050810,#0d1424 55%,#131c31);color:#eaf0fb;
+    border-radius:14px;padding:22px 24px 20px;margin-bottom:16px;box-shadow:var(--shadow-lg)}
+  .misstop{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+  .misslabel{font-size:10px;font-weight:700;letter-spacing:.12em;color:#7dd3fc;text-transform:uppercase}
+  .missq{font-size:18px;font-weight:700;margin:4px 0 0;letter-spacing:-.01em;max-width:640px;line-height:1.3}
+  .missstatus{font-size:11px;font-weight:800;letter-spacing:.08em;padding:7px 15px;border-radius:8px;
+    text-transform:uppercase;white-space:nowrap;transition:.3s}
+  .ms-prelaunch{background:rgba(125,211,252,.14);color:#7dd3fc;border:1px solid rgba(125,211,252,.35)}
+  .ms-launch{background:rgba(74,222,128,.14);color:#4ade80;border:1px solid rgba(74,222,128,.35)}
+  .ms-scrub{background:rgba(251,113,133,.14);color:#fb7185;border:1px solid rgba(251,113,133,.35)}
+  .ms-hold{background:rgba(251,191,36,.14);color:#fbbf24;border:1px solid rgba(251,191,36,.35)}
+
+  .crew{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+  .crewitem{display:flex;align-items:center;gap:7px;background:rgba(255,255,255,.05);
+    border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:6px 12px;font-size:11.5px;
+    color:#8ba0c2;transition:.3s}
+  .crewitem .ck{width:15px;height:15px;border-radius:50%;border:1.5px solid rgba(255,255,255,.25);
+    display:grid;place-items:center;font-size:9px;flex:none}
+  .crewitem.ready{background:rgba(74,222,128,.09);border-color:rgba(74,222,128,.3);color:#eafff2}
+  .crewitem.ready .ck{background:#4ade80;border-color:#4ade80;color:#04331c}
+  .crewitem.bench{opacity:.45}
+
+  .missstats{display:flex;gap:20px;flex-wrap:wrap;margin-top:16px;font-size:10.5px;color:#8ba0c2}
+  .missstats b{display:block;font-size:14px;margin-top:3px}
+
+  .timeline{margin-top:18px;display:flex;flex-direction:column;gap:9px}
+  .tstage{display:flex;gap:12px;align-items:flex-start;opacity:0;transform:translateY(6px);
+    transition:opacity .4s,transform .4s}
+  .tstage.shown{opacity:1;transform:none}
+  .tstage .tmark{flex:none;min-width:38px;text-align:right;font-size:10.5px;font-weight:800;
+    color:#7dd3fc;font-variant-numeric:tabular-nums;padding-top:11px}
+  .tstage .tcontent{flex:1;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
+    border-radius:9px;padding:9px 13px}
+  .tstage.final .tcontent{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.2)}
+  .tstage .thead{font-size:12.8px;font-weight:700;color:#fff}
+  .tstage.final .thead{font-size:14.5px}
+  .tstage .tdetail{font-size:11.8px;color:#a9b8d1;margin-top:3px;line-height:1.5}
+  .missfoot{font-size:11px;color:#7b8aa8;margin-top:16px}
+
   .stratgrid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
   @media(max-width:960px){.stratgrid{grid-template-columns:1fr}.verdict{grid-template-columns:1fr;text-align:center}}
   .seatrow td{vertical-align:middle}
@@ -453,17 +499,39 @@
       <small>Adverse Intelligence</small></div>
   </div>
   <nav class="steps">
-    <button class="step active" id="s1" onclick="go(1)"><span class="dot">1</span> Screener</button>
+    <button class="step active" id="s1" onclick="go(1)"><span class="dot">&#9878;</span> Mission Control</button>
     <button class="step" id="s2" onclick="go(2)" disabled><span class="dot">2</span> Adverse Media</button>
-    <button class="step" id="s3" onclick="go(3)" disabled><span class="dot">3</span> Entity Resolution Graph Network</button>
-    <button class="step" id="s6" onclick="go(6)"><span class="dot">&#9878;</span> Strategy board</button>
+    <button class="step" id="s3" onclick="go(3)" disabled><span class="dot">3</span> Relationships Intelligence</button>
     <button class="step" id="s4" onclick="go(4)"><span class="dot">&#8734;</span> API &amp; MCP</button>
   </nav>
 </header>
 
 <main>
-  <!-- 1 · INTAKE -->
+  <!-- 1 · MISSION CONTROL -->
   <section class="view on" id="view1">
+    <div class="modeseg">
+      <button class="on" data-mode="strategy" onclick="setMode('strategy')">Ask a decision question</button>
+      <button data-mode="screen" onclick="setMode('screen')">Screen a subject</button>
+    </div>
+
+    <div id="modeStrategy" class="mode-panel on">
+      <div class="card">
+        <h2>Mission Control</h2>
+        <p class="lede" style="margin-bottom:14px">Ask one high-stakes question - an acquisition,
+          a market entry, a launch. A crew investigates, red-teams its own case, and the launch
+          panel votes <b>LAUNCH / SCRUB / HOLD</b> with a confidence score.</p>
+        <div class="stratbar">
+          <input id="stratQ" placeholder="Should Salesforce acquire Notion?"
+                 onkeydown="if(event.key==='Enter')runStrategy()" />
+          <button class="primary" id="stratRun" onclick="runStrategy()">Launch mission</button>
+          <span class="status" id="stratStatus"></span>
+        </div>
+        <div class="sampchips" id="sampChips"></div>
+      </div>
+      <div id="stratResult"></div>
+    </div>
+
+    <div id="modeScreen" class="mode-panel">
     <div class="intake">
       <div class="hero">
         <div class="wrap">
@@ -493,8 +561,8 @@
             <button data-f="individual" onclick="filterEntities('individual')">People</button>
           </div>
           <div class="erail tall" id="entList"></div>
-          <p class="dim" style="font-size:11px;margin:10px 0 0">Fictional entities, 10-15 tagged
-            articles each. Real names run through the live form.</p>
+          <p class="dim" style="font-size:11px;margin:10px 0 0">Preview entities - explore instantly.
+            Enter any real name below for a live report.</p>
         </div>
       </aside>
 
@@ -532,6 +600,7 @@
         </div>
       </div>
       </div>
+    </div>
     </div>
   </section>
 
@@ -590,10 +659,10 @@
           <div class="card"><h2>Litigation</h2><div id="litigation"></div></div>
           <div class="card"><h2>Ownership &amp; officers</h2><div id="ownership"></div></div>
         </div>
-        <div class="card"><h2>Agent report</h2><div id="report"></div></div>
+        <div class="card"><h2>Investigation summary</h2><div id="report"></div></div>
         <div class="actions" style="margin-bottom:8px">
-          <button class="primary" onclick="go(3)">Entity Resolution Graph Network &rarr;</button>
-          <button class="ghost" onclick="go(1)">New investigation</button>
+          <button class="primary" onclick="go(3)">Relationships Intelligence &rarr;</button>
+          <button class="ghost" onclick="newScreening()">New investigation</button>
         </div>
       </div>
 
@@ -649,7 +718,7 @@
     <div class="card" style="margin-top:16px"><h2 id="detailTitle">Detail</h2><div id="graphDetail"></div></div>
     <div class="actions" style="margin-bottom:8px">
       <button class="ghost" onclick="go(2)">&larr; Back to dashboard</button>
-      <button class="ghost" onclick="go(1)">New investigation</button>
+      <button class="ghost" onclick="newScreening()">New investigation</button>
     </div>
     <details class="card"><summary>Raw intelligence object (JSON)</summary><pre id="raw"></pre></details>
   </section>
@@ -770,27 +839,11 @@
       <div id="contract"></div>
     </div>
     <div class="actions" style="margin-bottom:8px">
-      <button class="ghost" onclick="go(1)">&larr; Back to intake</button>
+      <button class="ghost" onclick="go(1)">&larr; Back to Mission Control</button>
     </div>
   </section>
 
-  <!-- 6 · STRATEGY BOARD -->
-  <section class="view" id="view6">
-    <div class="card">
-      <h2>Executive decision board</h2>
-      <p class="lede" style="margin-bottom:14px">Ask one high-stakes question - an acquisition,
-        a market entry, a launch. An autonomous board investigates, attacks its own case, and
-        votes a <b>GO / NO-GO / MORE INFORMATION REQUIRED</b> with a confidence score.</p>
-      <div class="stratbar">
-        <input id="stratQ" placeholder="Should Salesforce acquire Notion?"
-               onkeydown="if(event.key==='Enter')runStrategy()" />
-        <button class="primary" id="stratRun" onclick="runStrategy()">Convene board</button>
-        <span class="status" id="stratStatus"></span>
-      </div>
-      <div class="sampchips" id="sampChips"></div>
-    </div>
-    <div id="stratResult"></div>
-  </section>
+
 </main>
 
 <script>
@@ -892,13 +945,19 @@ function afterData(msg){
 }
 function go(step){
   if((step===2||step===3)&&!DATA)return;
-  [1,2,3,4,6].forEach(i=>{$("view"+i).classList.toggle("on",i===step);
+  [1,2,3,4].forEach(i=>{$("view"+i).classList.toggle("on",i===step);
     $("s"+i).classList.toggle("active",i===step);$("s"+i).classList.toggle("done",i<step&&i<4);});
   if(step===3)setGraph(GRAPH);
   if(step===4)renderConnectors();
-  if(step===6)initStrategy();
   window.scrollTo({top:0,behavior:"smooth"});
 }
+function setMode(mode){
+  document.querySelectorAll(".modeseg button").forEach(b=>b.classList.toggle("on",b.dataset.mode===mode));
+  $("modeStrategy").classList.toggle("on",mode==="strategy");
+  $("modeScreen").classList.toggle("on",mode==="screen");
+  if(mode==="strategy")initStrategy();
+}
+function newScreening(){setMode("screen");go(1);}
 
 /* strategy board */
 const SEAT_ICONS={
@@ -908,26 +967,61 @@ const SEAT_ICONS={
   competition:'<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.4"/><path d="M12 4v3M12 17v3M4 12h3M17 12h3"/>',
   legal:'<path d="M12 3v18M6 20h12M5 7h14M8 3.5L5 7M8 3.5L19 7M5 7l-2.5 5a2.6 2.6 0 0 0 5 0zM19 7l-2.5 5a2.6 2.6 0 0 0 5 0z"/>',
 };
-let STRAT=null,STRAT_SORT={key:"risk_score",dir:-1};
+let STRAT=null,STRAT_SORT={key:"risk_score",dir:-1},MISSION_TIMERS=[];
 function decColor(d){return d==="GO"?"var(--low)":d==="NO-GO"?"var(--critical)":"var(--medium)";}
 function decClass(d){return d==="GO"?"vd-go":d==="NO-GO"?"vd-nogo":"vd-more";}
+function decLabel(d){return d==="GO"?"LAUNCH":d==="NO-GO"?"SCRUB":"HOLD";}
 function riskClass(l){return "rk-"+String(l||"").toLowerCase();}
 function voteClass(v){v=String(v||"").toUpperCase();
   return v==="GO"?"vb-go":v.startsWith("NO")?"vb-nogo":v.includes("CONDITIONAL")?"vb-cond":"vb-more";}
+
+const CREW_ROLES=[
+  {key:"__lead",label:"Flight Director",always:true},
+  {key:"Market",label:"Market Intelligence"},
+  {key:"Finance",label:"Financial Systems"},
+  {key:"Technology",label:"Engineering"},
+  {key:"Competition",label:"Recon"},
+  {key:"Legal",label:"Legal Operations"},
+];
+function seatByKey(seats,key){return (seats||[]).find(s=>s.seat===key);}
+function buildTimeline(strat){
+  const seats=strat.seats||[],v=strat.verdict||{},atks=strat.attacks||[],
+    ea=strat.evidence_audit||{},votes=strat.board_vote||[];
+  const mkt=seatByKey(seats,"Market"),fin=seatByKey(seats,"Finance");
+  const dealBreakers=atks.filter(a=>a.deal_breaker).length;
+  const goVotes=votes.filter(x=>String(x.vote).toUpperCase()==="GO").length;
+  return [
+    {t:"T-90",head:"Market analysis complete",
+      detail:(mkt&&mkt.staffed)?mkt.headline:"Market seat not staffed for this mission."},
+    {t:"T-70",head:"Financial systems analysis complete",
+      detail:(fin&&fin.staffed)?fin.headline:"Finance seat not staffed for this mission."},
+    {t:"T-45",head:`Red team challenge ${atks.length?"initiated":"skipped"}`,
+      detail:atks.length
+        ?`${atks.length} attack(s) filed${dealBreakers?`, ${dealBreakers} marked DEAL BREAKER`:""}.`+
+          (strat.kill_shot?` Kill shot: "${strat.kill_shot}"`:"")
+        :"No adversarial attacks filed."},
+    {t:"T-15",head:"Evidence validation",
+      detail:`${ea.verified_pct||0}% of claims verified, ${ea.unsupported_pct||0}% unsupported.`+
+        (ea.integrity_note?` ${ea.integrity_note}`:"")},
+    {t:"T-5",head:"Launch panel voting",
+      detail:votes.length?`${goVotes} of ${votes.length} board members voted GO.`:"No board vote recorded."},
+    {t:"T-0",head:decLabel(v.decision),detail:(v.chair_summary||"").trim(),final:true},
+  ];
+}
 
 async function initStrategy(){
   if($("sampChips").children.length)return;
   try{
     const r=await fetch("/api/v1/strategy/samples");const d=await r.json();
-    $("sampChips").innerHTML=`<span class="dim" style="font-size:11.5px;align-self:center;margin-right:2px">Try a sample:</span>`+
+    $("sampChips").innerHTML=`<span class="dim" style="font-size:11.5px;align-self:center;margin-right:2px">Recent missions:</span>`+
       d.samples.map(s=>`<button class="sampchip" onclick="loadStratSample('${s.id}')">
         <b>${esc(s.question)}</b>
-        <span class="cd" style="color:${decColor(s.decision)}">${esc(s.decision)} &middot; ${s.confidence}%</span>
+        <span class="cd" style="color:${decColor(s.decision)}">${decLabel(s.decision)} &middot; ${s.confidence}%</span>
       </button>`).join("");
   }catch(e){}
 }
 async function loadStratSample(id){
-  $("stratStatus").className="status";$("stratStatus").textContent="Loading board…";
+  $("stratStatus").className="status";$("stratStatus").textContent="Loading mission…";
   try{
     const r=await fetch("/api/v1/strategy/sample/"+id);if(!r.ok)throw new Error(r.statusText);
     STRAT=await r.json();$("stratQ").value=STRAT.question;$("stratStatus").textContent="";renderStrategy();
@@ -937,7 +1031,7 @@ async function runStrategy(){
   const q=$("stratQ").value.trim();
   if(q.length<6){$("stratStatus").className="status err";$("stratStatus").textContent="Enter a decision question.";return;}
   $("stratRun").disabled=true;$("stratStatus").className="status";
-  $("stratStatus").textContent="Convening the board…";
+  $("stratStatus").textContent="Assembling the crew…";
   try{
     const r=await fetch("/api/v1/strategy/decide",{method:"POST",
       headers:{"Content-Type":"application/json"},body:JSON.stringify({question:q})});
@@ -952,34 +1046,47 @@ function sortSeats(key){
 }
 function renderStrategy(){
   const el=$("stratResult");if(!STRAT){el.innerHTML="";return;}
+  MISSION_TIMERS.forEach(clearTimeout);MISSION_TIMERS=[];
   if(STRAT.available===false){
     el.innerHTML=`<div class="stratnotice">${esc(STRAT.notice||"Live board unavailable.")}</div>`;
     return;
   }
   const v=STRAT.verdict,seats=STRAT.seats||[];
   const staffed=seats.filter(s=>s.staffed);
-  // verdict header
   const conf=v.confidence||0;
-  let html=`<div class="verdict" style="color:${decColor(v.decision)}">
-    <div class="vgauge">
-      <span class="vdecision ${decClass(v.decision)}">${esc(v.decision)}</span>
-      <div class="vconf"><div class="ring" style="--p:${conf}"><i>${conf}%</i></div>
-        <div class="cl">Confidence</div></div>
-    </div>
-    <div class="vmeta">
-      <span class="vtype">${esc(STRAT.decision_type||"decision")}</span>
-      <h1>${esc(STRAT.question||"")}</h1>
-      <p>${esc((v.chair_summary||"").trim())}</p>
-      <div class="vrisks">
-        <div class="vrisk">Strategic fit<b class="rk-fit">${v.strategic_fit}/10</b></div>
-        <div class="vrisk">Financial risk<b class="${riskClass(v.financial_risk)}">${esc(v.financial_risk)}</b></div>
-        <div class="vrisk">Regulatory risk<b class="${riskClass(v.regulatory_risk)}">${esc(v.regulatory_risk)}</b></div>
-        <div class="vrisk">Execution risk<b class="${riskClass(v.execution_risk)}">${esc(v.execution_risk)}</b></div>
-      </div>
-    </div></div>`;
+  const crewReady=k=>{const s=seatByKey(seats,k);return s&&s.staffed;};
+  const stages=buildTimeline(STRAT);
 
-  // stakes + success criteria + board vote (top row)
-  html+=`<div class="stratgrid">
+  // mission control header: crew roster + T-minus timeline
+  let html=`<div class="missionhead">
+    <div class="misstop">
+      <div><span class="misslabel">Mission</span><div class="missq">${esc(STRAT.question||"")}</div></div>
+      <span class="missstatus ms-prelaunch" id="missStatus">PRE-LAUNCH</span>
+    </div>
+    <div class="crew">
+      ${CREW_ROLES.map(r=>`<span class="crewitem${(r.always||crewReady(r.key))?" ready":" bench"}">
+        <span class="ck">${(r.always||crewReady(r.key))?"&#10003;":""}</span>${esc(r.label)}</span>`).join("")}
+    </div>
+    <div class="missstats">
+      <span>Confidence<b>${conf}%</b></span>
+      <span>Strategic fit<b class="rk-fit">${v.strategic_fit}/10</b></span>
+      <span>Financial<b class="${riskClass(v.financial_risk)}">${esc(v.financial_risk)}</b></span>
+      <span>Regulatory<b class="${riskClass(v.regulatory_risk)}">${esc(v.regulatory_risk)}</b></span>
+      <span>Execution<b class="${riskClass(v.execution_risk)}">${esc(v.execution_risk)}</b></span>
+    </div>
+    <div class="timeline" id="missTimeline">
+      ${stages.map((s,i)=>`<div class="tstage${s.final?" final":""}" data-i="${i}">
+        <div class="tmark">${esc(s.t)}</div>
+        <div class="tcontent">
+          <div class="thead">${esc(s.head)}</div>
+          ${s.detail?`<div class="tdetail">${esc(s.detail)}</div>`:""}
+        </div></div>`).join("")}
+    </div>
+  </div>`;
+
+  // stakes + success criteria + board vote, and the full tabular breakdown below
+  html+=`<details open class="card"><summary>Full mission report</summary>
+  <div class="stratgrid" style="margin-top:14px">
     <div class="card"><h2>Mandate</h2>
       <div class="kv"><div>Stakes</div><div>${esc(STRAT.stakes||"-")}</div></div>
       <h2 style="margin-top:14px">Success criteria &middot; 24 months</h2>
@@ -1057,11 +1164,22 @@ function renderStrategy(){
       <td class="dim">${esc(a.why_it_breaks)}</td></tr>`).join("")}</tbody></table>
     ${STRAT.kill_shot?`<div class="killshot"><b>Kill shot:</b> ${esc(STRAT.kill_shot)}</div>`:""}
     ${STRAT.would_change_mind?`<p class="dim" style="font-size:12.5px;margin:10px 0 0"><b>Would change the verdict:</b> ${esc(STRAT.would_change_mind)}</p>`:""}
-    </div>`;
+    </div>
+  </details>`;
 
-  html+=`<p class="dim" style="font-size:11.5px;margin:2px 2px 8px">Generated by: ${esc(STRAT.generated_by||"-")}.
-    ${STRAT.generated_by&&STRAT.generated_by.indexOf("sample")>=0?"Illustrative scenario - figures are estimates. Set an LLM key to run any question live with sourced analysis.":""}</p>`;
+  html+=`<p class="missfoot">Analysis by ${esc(STRAT.generated_by||"-")}.</p>`;
   el.innerHTML=html;
+
+  // stagger-reveal the mission timeline, then flip the status badge to the verdict
+  const rows=[...el.querySelectorAll("#missTimeline .tstage")];
+  rows.forEach((row,i)=>{
+    MISSION_TIMERS.push(setTimeout(()=>row.classList.add("shown"),260+i*420));
+  });
+  MISSION_TIMERS.push(setTimeout(()=>{
+    const badge=$("missStatus");if(!badge)return;
+    const cls=v.decision==="GO"?"ms-launch":v.decision==="NO-GO"?"ms-scrub":"ms-hold";
+    badge.className="missstatus "+cls;badge.textContent=decLabel(v.decision);
+  },260+rows.length*420+150));
 }
 function dotColor(s){
   const net=(s.conviction||0)-(s.risk_score||0);
@@ -1672,7 +1790,7 @@ async function tryApi(){
   finally{btn.disabled=false;}
 }
 
-setType("organization");loadEntities();buildWorldMap();Graph.init();renderConnectors();
+setType("organization");loadEntities();buildWorldMap();Graph.init();renderConnectors();initStrategy();
 </script>
 </body>
 </html>

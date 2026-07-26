@@ -289,7 +289,7 @@ async def decide(question: str) -> dict:
     match = _samples.match(question)
     if match is not None:
         out = get_sample(match)
-        out["generated_by"] = "curated sample (no live LLM key configured)"
+        out["generated_by"] = "mission archive (no live LLM key configured)"
         out["question"] = question or out["question"]
         return out
     return _keyless_notice(question)
@@ -572,8 +572,8 @@ def _keyless_notice(question: str, error: str | None = None) -> dict:
         "generated_by": "unavailable",
         "notice": (
             "The live decision board needs an LLM key (OPENROUTER_API_KEY or "
-            "ANTHROPIC_API_KEY). Pick one of the sample decisions to see the "
-            "full board, or set a key to run this question live."
+            "ANTHROPIC_API_KEY). Pick one of the missions below to see the full "
+            "board, or set a key to run this question live."
         ),
         "error": error,
         "samples": list_samples(),

@@ -1,6 +1,6 @@
-# Supplier Intelligence API
+# Entity Intelligence API
 
-An AI-native third party risk investigation layer. It turns fragmented public
+An AI-native third-party risk investigation layer. It turns fragmented public
 information into an evidence-backed intelligence object that an enterprise AI
 agent can consume before onboarding, procurement, or investment decisions.
 
